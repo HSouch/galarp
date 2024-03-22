@@ -8,8 +8,7 @@ from matplotlib import pyplot as plt
 import matplotlib as mpl
 
 
-import nonconserved as gn
-
+from . import utils
 
 
 def pyplot_style():
@@ -67,7 +66,7 @@ def k3d_plot(orbit_containers, bgcolor=0, particle_color=0xffffff, outname="test
     wind_length = 2
     wind_x0, wind_y0, wind_z0 = 0, 0, 0
     
-    ell_xs, ell_ys, ell_zs = gn.ellipse_coords(0, 0, 10, 10, 0)
+    ell_xs, ell_ys, ell_zs = utils.ellipse_coords(0, 0, 10, 10, 0)
     
     plot = k3d.plot(fps=60, axes_helper=0, grid_visible=False, background_color=0, )
     
@@ -137,9 +136,9 @@ def plot_orbits(data, wind=None, shadow=None, plot_dir='plots/', R_plot = 15, zr
     ax[2].set_xlim(-R_plot, R_plot)
     ax[2].set_ylim(zrange[0], zrange[1])
 
-    gn.plot_disk(ax, 10)
+    utils.plot_disk(ax, 10)
     if wind is not None:
-        gn.plot_wind_vector(wind.vector.value,  ax, length=1, loc=(-R_plot + 1, -R_plot + 1, zrange[0] + 1), color="black")
+        utils.plot_wind_vector(wind.vector.value,  ax, length=1, loc=(-R_plot + 1, -R_plot + 1, zrange[0] + 1), color="black")
 
     if shadow is not None:
         shadow.plot_shadow(ax=ax)
