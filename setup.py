@@ -5,6 +5,8 @@
 import os
 import sys
 
+from galarp import __version__
+
 
 from setuptools import setup, find_packages
 
@@ -16,13 +18,13 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name='galarp',
-    version='1.0.0',
+    version=__version__,
     author='Harrison Souchereau',
     author_email='harrison.souchereau@yale.edu',
     description='A ram pressure add-on for Gala numerical integration of gravitational potentials',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/your-username/your-package-repo',
+    url='https://github.com/HSouch/galarp',
     packages=find_packages(),
     classifiers=[
         'Development Status :: 5 - Production/Stable',
