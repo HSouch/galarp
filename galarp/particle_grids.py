@@ -10,7 +10,7 @@ from . import utils
 from tqdm import tqdm
 
 
-__all__ = ["ParticleGrid", "UniformGrid", "ExponentialGrid", "generate_positions"]
+__all__ = ["ParticleGrid", "UniformGrid", "ExponentialGrid", "generate_exponential_positions"]
 
 
 class ParticleGrid:
