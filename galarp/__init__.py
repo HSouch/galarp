@@ -9,3 +9,6 @@ from .winds import *            # Classes for ram pressure wind
 
 
 from .plotting import *
+
+
+__version__ = "0.0.2"
