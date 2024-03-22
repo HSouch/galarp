@@ -7,7 +7,7 @@ import numpy as np
 
 
 # This module
-import nonconserved as gn
+import galarp as grp
 from . import utils
 
 from gala.units import galactic
@@ -23,10 +23,10 @@ def test_uniform_shadow(plot_dir = "plots/shadow_tests/"):
     os.makedirs(plot_dir, exist_ok=True)
 
     for angle in range(10, 90, 10):
-        wind = gn.RPWind(units=galactic)
+        wind = grp.RPWind(units=galactic)
         wind.init_from_inc(np.deg2rad(angle), 300 * u.km  / u.s)
         
-        shadow = gn.UniformShadow()
+        shadow = grp.UniformShadow()
         shadow.init_from_wind(wind)
         shadow.plot_shadow(wind=wind, outname=f"{plot_dir}shadow_{angle}.pdf")
 
