@@ -21,12 +21,14 @@ such as the intergalactic medium or the intracluster medium. The gas is stripped
 which can lead to the formation of a tail of gas and stars. This process is known as ram 
 pressure stripping. 
 
-GalaRP leverages the `Gala python ackage <http://gala.adrian.pw/en/latest/>`_, combined with nonconservative orbit 
+GalaRP leverages the `Gala python package <http://gala.adrian.pw/en/latest/>`_, combined with nonconservative orbit 
 integration,
 to simulate the larger-scale effects of ram pressure absent hydrodynamical instabilities. Its primary purpose is to 
 be an efficient tool for finding optimal setup conditions for hydrodynamical wind-tunnel simulations of ram pressure
 stripping.
 
+Development is active on `Github <https://github.com/HSouch/galarp/>`_, and the Authors encourage
+updates and suggestions to improve and enhance its functionality.
 
 .. toctree::
    :maxdepth: 2
