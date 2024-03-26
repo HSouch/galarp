@@ -3,8 +3,29 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to GalaRP's documentation!
-==================================
+
+.. raw:: html
+
+   <img src="_static/Galarp-Logo.png" width="50%"
+    style="margin-bottom: 32px;"/>
+
+.. module:: gala
+
+******
+GalaRP
+******
+
+Ram pressure is a physical process that a galaxy experiences when it travels through a 
+gaseous medium, 
+such as the intergalactic medium or the intracluster medium. The gas is stripped from the galaxy, 
+which can lead to the formation of a tail of gas and stars. This process is known as ram 
+pressure stripping. 
+
+GalaRP leverages the `Gala python ackage <http://gala.adrian.pw/en/latest/>`_, combined with nonconservative orbit 
+integration,
+to simulate the larger-scale effects of ram pressure absent hydrodynamical instabilities. Its primary purpose is to 
+be an efficient tool for finding optimal setup conditions for hydrodynamical wind-tunnel simulations of ram pressure
+stripping.
 
 .. toctree::
    :maxdepth: 2
