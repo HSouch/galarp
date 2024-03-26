@@ -27,9 +27,24 @@ to simulate the larger-scale effects of ram pressure absent hydrodynamical insta
 be an efficient tool for finding optimal setup conditions for hydrodynamical wind-tunnel simulations of ram pressure
 stripping.
 
+
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+
+   getting_started
+
+
+.. toctree::
+   :maxdepth: 2
+
+   running
+
+
+
+.. toctree::
+   :maxdepth: 2
+
+   postprocess
 
 
 
