@@ -1,5 +1,5 @@
 LICENSE
-README.md
+README.rst
 setup.py
 galarp/__init__.py
 galarp/particle_grids.py
@@ -14,3 +14,6 @@ galarp.egg-info/SOURCES.txt
 galarp.egg-info/dependency_links.txt
 galarp.egg-info/requires.txt
 galarp.egg-info/top_level.txt
+galarp/tests/__init__.py
+galarp/tests/helpers.py
+galarp/tests/test_shadows.py
