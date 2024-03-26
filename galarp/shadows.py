@@ -53,7 +53,9 @@ class ShadowBase:
         """
         self.phi = wind.inclination()
 
-    def plot_shadow(self, ax=None, wind=None, color="black", outname=None, x0=0, y0=0, z0=0):
+    def plot_shadow(
+        self, ax=None, wind=None, color="black", outname=None, x0=0, y0=0, z0=0
+    ):
         """
         Plots the shadow on the given axes.
 
@@ -69,11 +71,11 @@ class ShadowBase:
         """
         R_disk = self.R_disk.value if type(self.R_disk) is u.Quantity else self.R_disk
         R_plot = R_disk * 1.5
-        
+
         # Create figure if ax is not provided
         if ax is None:
             fig, ax = plt.subplots(1, 3, facecolor="white", figsize=(12, 4))
-        
+
         for axis in ax.flatten():
             axis.set_xlim(-R_plot, R_plot)
             axis.set_ylim(-R_plot, R_plot)
@@ -82,12 +84,30 @@ class ShadowBase:
         y = np.linspace(-R_disk, R_disk, 100)
         X, Y = np.meshgrid(x, y)
         XY = self.evaluate(np.array([X, Y, np.zeros(X.shape) + z0]).T)
-        XZ = self.evaluate(np.array([X, np.zeros(X.shape) + y0, Y]).T)   
-        YZ = self.evaluate(np.array([np.zeros(X.shape) + x0, X, Y]).T)   
+        XZ = self.evaluate(np.array([X, np.zeros(X.shape) + y0, Y]).T)
+        YZ = self.evaluate(np.array([np.zeros(X.shape) + x0, X, Y]).T)
 
-        im1 = ax[0].imshow(1- XY, origin="lower", cmap="Greys", alpha=0.5, extent=(-R_disk, R_disk, -R_disk, R_disk))
-        im2 = ax[1].imshow(1 - XZ, origin="lower", cmap="Greys", alpha=0.5, extent=(-R_disk, R_disk, -R_disk, R_disk))
-        im3 = ax[2].imshow(1 - YZ, origin="lower", cmap="Greys", alpha=0.5, extent=(-R_disk, R_disk, -R_disk, R_disk))
+        im1 = ax[0].imshow(
+            1 - XY,
+            origin="lower",
+            cmap="Greys",
+            alpha=0.5,
+            extent=(-R_disk, R_disk, -R_disk, R_disk),
+        )
+        im2 = ax[1].imshow(
+            1 - XZ,
+            origin="lower",
+            cmap="Greys",
+            alpha=0.5,
+            extent=(-R_disk, R_disk, -R_disk, R_disk),
+        )
+        im3 = ax[2].imshow(
+            1 - YZ,
+            origin="lower",
+            cmap="Greys",
+            alpha=0.5,
+            extent=(-R_disk, R_disk, -R_disk, R_disk),
+        )
 
         plt.colorbar(mappable=im1, ax=ax[0], location="top")
         plt.colorbar(mappable=im2, ax=ax[1], location="top")
@@ -96,7 +116,9 @@ class ShadowBase:
         utils.plot_disk(ax, R_disk, lw=1, color="black")
 
         if wind is not None:
-            utils.plot_wind_vector(wind.normalized().value, ax, length=0.5, loc=(-R_disk, -R_disk, -R_disk))
+            utils.plot_wind_vector(
+                wind.normalized().value, ax, length=0.5, loc=(-R_disk, -R_disk, -R_disk)
+            )
 
         if ax is None:
             plt.tight_layout()
@@ -104,7 +126,6 @@ class ShadowBase:
                 plt.savefig(outname, dpi=200)
             else:
                 plt.show()
-
 
     def __repr__(self):
         """
@@ -127,7 +148,10 @@ class UniformShadow(ShadowBase):
         zmin (Quantity, optional): The minimum value of z above the disk. Defaults to 0 kpc.
         phi (float, optional): The angle in radians. Defaults to 20 degrees.
     """
-    def __init__(self, damping=0.5, R_disk=10 * u.kpc, zmin=0 * u.kpc, phi=np.deg2rad(20)):
+
+    def __init__(
+        self, damping=0.5, R_disk=10 * u.kpc, zmin=0 * u.kpc, phi=np.deg2rad(20)
+    ):
         super().__init__(damping=damping, R_disk=R_disk, shadow_name="Uniform")
         self.zmin, self.phi = zmin, phi
 
@@ -142,9 +166,13 @@ class UniformShadow(ShadowBase):
         out[in_disk] = self.damping
         return out
 
-    def plot_shadow(self, ax=None, wind=None, color="black", outname=None, x0=0, y0=0, z0=None):
+    def plot_shadow(
+        self, ax=None, wind=None, color="black", outname=None, x0=0, y0=0, z0=None
+    ):
         z0 = self.zmin + 0.5 * u.kpc if z0 is None else z0
-        super().plot_shadow(ax=ax, wind=wind, color=color, outname=outname, x0=z0, y0=y0, z0 = z0)
+        super().plot_shadow(
+            ax=ax, wind=wind, color=color, outname=outname, x0=z0, y0=y0, z0=z0
+        )
 
 
 class ExponentialShadow(ShadowBase):
@@ -158,7 +186,10 @@ class ExponentialShadow(ShadowBase):
         zmin (Quantity, optional): The minimum value of z above the disk. Defaults to 0 kpc.
         phi (float, optional): The angle in radians. Defaults to 20 degrees.
     """
-    def __init__(self, damping=0.5, R_disk=10 * u.kpc, zmin=0 * u.kpc, phi=np.deg2rad(20)):
+
+    def __init__(
+        self, damping=0.5, R_disk=10 * u.kpc, zmin=0 * u.kpc, phi=np.deg2rad(20)
+    ):
         super().__init__(damping=damping, R_disk=R_disk, shadow_name="Exponential")
         self.zmin, self.phi = zmin, phi
 
@@ -168,29 +199,31 @@ class ExponentialShadow(ShadowBase):
         dist = np.sqrt((x - cent) ** 2 + y**2)
         out = np.exp(-dist / self.R_disk.value)
         in_disk = np.logical_and((z > self.zmin.value), (dist < self.R_disk.value))
-        out[in_disk] *= self.damping 
+        out[in_disk] *= self.damping
         return out
-    
-    def plot_shadow(self, ax=None, wind=None, color="black", outname=None, x0=0, y0=0, z0=None):
+
+    def plot_shadow(
+        self, ax=None, wind=None, color="black", outname=None, x0=0, y0=0, z0=None
+    ):
         z0 = self.zmin + 0.5 * u.kpc if z0 is None else z0
-        super().plot_shadow(ax=ax, wind=wind, color=color, outname=outname, x0=z0, y0=y0, z0 = z0)
+        super().plot_shadow(
+            ax=ax, wind=wind, color=color, outname=outname, x0=z0, y0=y0, z0=z0
+        )
 
 
 class EdgeOnShadow(ShadowBase):
-
     def __init__(self, damping=0.5, R_disk=10 * u.kpc, Z_disk=2 * u.kpc, x0=0 * u.kpc):
         super().__init__(damping=damping, R_disk=R_disk, shadow_name="EdgeOn")
 
         # Always assume kpc for xyz inputs (galactic coordinate system)
         self.x0 = x0.to(u.kpc).value
-        self.R_disk = R_disk.to(u.kpc).value        
+        self.R_disk = R_disk.to(u.kpc).value
         self.Z_disk = Z_disk.to(u.kpc).value
-        
+
     def evaluate(self, q, t):
         x, y, z = q.T
 
-        in_ellipsoid = ((y / self.R_disk)) ** 2 + ((z / self.Z_disk)) ** 2 < 1
-
+        in_ellipsoid = (y / self.R_disk) ** 2 + (z / self.Z_disk) ** 2 < 1
 
         out = np.ones(x.shape)
 
@@ -198,7 +231,9 @@ class EdgeOnShadow(ShadowBase):
 
         return out
 
-    def plot_shadow(self, ax=None, wind=None, color="black", outname=None, x0=0, y0=0, z0=0):
-        super().plot_shadow(ax=ax, wind=wind, color=color, outname=outname, x0=z0, y0=y0, z0 = z0)
-
-
+    def plot_shadow(
+        self, ax=None, wind=None, color="black", outname=None, x0=0, y0=0, z0=0
+    ):
+        super().plot_shadow(
+            ax=ax, wind=wind, color=color, outname=outname, x0=z0, y0=y0, z0=z0
+        )
