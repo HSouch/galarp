@@ -1,7 +1,10 @@
 
+from astropy.table import Table
 import astropy.units as u
 from astropy.units import Quantity
 import numpy as np
+
+from scipy.interpolate import interp1d
 
 from tqdm import tqdm
 
@@ -10,6 +13,7 @@ __all__ = [
     "RPWind",
     "LorentzianWind",
     "StepFunctionWind",
+    "InterpolatedWind",
     "Density",
     "ExponentialDensity",
     "InterpolatedDensity",
@@ -55,6 +59,7 @@ class RPWind:
 
     def init_from_inc(self, inclination, strength):
         """Initialize the wind vector from an inclination and strength"""
+
         x = strength * np.cos(inclination)
         z = strength * np.sin(inclination)
         self.vector = Quantity([x, 0 * x.unit, z]).to(
@@ -117,6 +122,42 @@ class StepFunctionWind(RPWind):
     def evaluate(self, t):
         factor = t > self.t0
         return super().evaluate(t) * factor
+    
+
+class InterpolatedWind(RPWind):
+    """ Wind class that returns an interpolated value for the wind vector at a given time t based on a scipy 
+        interp1D object.
+
+    """
+    def __init__(self, interp, inc=np.deg2rad(90), **kwargs):
+        super().__init__(**kwargs)
+        self.vector = kwargs.get('vector', u.Quantity([np.cos(inc), 0, np.sin(inc)]) * u.km/u.s)
+
+        self.interp = interp
+
+        self.unit_vector = self.vector / np.linalg.norm(self.vector)
+        print(self.unit_vector)
+
+
+    def evaluate(self, t):
+        return self.unit_vector * self.interp(t)
+    
+
+    def from_table(self, fn, time_key, vel_keys, format='ascii', verbose=False, v_format=u.cm/u.s, ts_format=u.s):
+        t = Table.read(fn, format=format)
+
+        if verbose:
+            print(f'Loaded Table with {len(t)} rows, and keys: {t.keys()}')
+
+        ts = t[time_key] * ts_format.to(u.Myr)
+
+        if type(vel_keys) is not list:
+            vel_keys = [vel_keys]
+
+        vels = np.array([t[key] for key in vel_keys])
+        v_tot = np.sqrt(np.sum(vels**2, axis=0)) * v_format
+        
+        self.interp = interp1d(ts, v_tot, bounds_error=False, fill_value='extrapolate')
 
 
 class Density:
@@ -149,12 +190,12 @@ class InterpolatedDensity(Density):
     as possible.
     """
 
-    def __init__(self, rho_interp):
+    def __init__(self, interp):
         super().__init__(
             0
         )  # The "rho" can just be 0 here, as it will be overwritten by the interpolation
 
-        self.rho_interp = rho_interp
+        self.interp = interp
 
     def evaluate(self, t):
-        return np.interp(t, self.t, self.values)
+        return self.interp(t)
