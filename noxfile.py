@@ -2,10 +2,10 @@ import nox
 
 
 @nox.session
-def lint(session):
+def tests(session):
     """ Checking style using ruff"""
-    
-    session.install()
+    session.install("-r", "requirements.txt")
+
     session.run("pytest")
 
     #session.install("ruff")
