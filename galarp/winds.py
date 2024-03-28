@@ -129,7 +129,7 @@ class InterpolatedWind(RPWind):
         interp1D object.
 
     """
-    def __init__(self, interp, inc=np.deg2rad(90), **kwargs):
+    def __init__(self, interp=None, inc=np.deg2rad(90), **kwargs):
         super().__init__(**kwargs)
         self.vector = kwargs.get('vector', u.Quantity([np.cos(inc), 0, np.sin(inc)]) * u.km/u.s)
 
@@ -158,6 +158,9 @@ class InterpolatedWind(RPWind):
         v_tot = np.sqrt(np.sum(vels**2, axis=0)) * v_format
         
         self.interp = interp1d(ts, v_tot, bounds_error=False, fill_value='extrapolate')
+
+    def from_xy(self, xs, ys):
+        self.interp = interp1d(xs, ys, bounds_error=False, fill_value='extrapolate')
 
 
 class Density:
