@@ -6,8 +6,7 @@
 
 .. raw:: html
 
-   <img src="_static/Galarp-Logo.png" width="50%"
-    style="margin-bottom: 32px;"/>
+   <img src="_static/Galarp-Logo.png" width="50%"  style="margin-bottom: 32px;"/>
 
 .. module:: gala
 
@@ -31,7 +30,7 @@ Development is active on `Github <https://github.com/HSouch/galarp/>`_, and the 
 updates and suggestions to improve and enhance its functionality.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    getting_started
 

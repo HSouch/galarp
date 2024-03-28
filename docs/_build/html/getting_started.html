@@ -39,10 +39,11 @@
     <script src="_static/documentation_options.js?v=5929fcd5"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'getting_started';</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Quick Start" href="quickstart.html" />
+    <link rel="next" title="Running GalaRP" href="running.html" />
     <link rel="prev" title="GalaRP" href="index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -299,11 +300,7 @@ document.write(`
 <nav class="bd-docs-nav bd-links"
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
-  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
-</ul>
-</div>
+  <div class="bd-toc-item navbar-nav"></div>
 </nav></div>
     </div>
   
@@ -358,12 +355,57 @@ document.write(`
                   
   <section id="getting-started-with-galarp">
 <h1>Getting Started with GalaRP<a class="headerlink" href="#getting-started-with-galarp" title="Link to this heading">#</a></h1>
-<div class="toctree-wrapper compound">
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
-</ul>
+<p>Getting started with GalaRP is pretty simple. The following steps are needed for a complete simulation:</p>
+<ol class="arabic simple">
+<li><p>Create a satellite galaxy potential.</p></li>
+<li><p>Determine the ram pressure wind model.</p></li>
+<li><p>Run the simulation.</p></li>
+</ol>
+<p>and that’s it. The following sections will guide you through these steps.</p>
+<section id="step-1-create-a-satellite-galaxy-potential">
+<h2>Step 1: Create a Satellite Galaxy Potential<a class="headerlink" href="#step-1-create-a-satellite-galaxy-potential" title="Link to this heading">#</a></h2>
+<p>To create a satellite galaxy potential, you can follow this example. Here, we are initializing
+a potential that is similar to the dwarf galaxy used in
+<a class="reference external" href="https://iopscience.iop.org/article/10.3847/1538-4357/acfe6f/pdf/">Zhu+2023</a>.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">galarp</span> <span class="k">as</span> <span class="nn">grp</span>
+</pre></div>
 </div>
+<p>GalaRP uses Gala for all of its gravitational potentials, though there are some built-in potentials available as
+defaults, based on various papers.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">gala</span> <span class="kn">import</span> <span class="n">potential</span> <span class="k">as</span> <span class="n">gp</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">gala.units</span> <span class="kn">import</span> <span class="n">galactic</span>
+</pre></div>
+</div>
+<p>In this case the Zhu+2023 potential is already available as a built-in, but it is just a combination of an NFW DM halo,
+a Miyamoto-Nagai stellar disk, and an exponential gas disk. You define these in the exact same way as one would in
+<a class="reference external" href="https://gala-astro.readthedocs.io/en/latest/potential/compositepotential.html">Gala</a>.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">pot</span> <span class="o">=</span> <span class="n">grp</span><span class="o">.</span><span class="n">builtins</span><span class="o">.</span><span class="n">JZ2023_Satellite</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="step-2-define-the-rp-interaction-parameters">
+<h2>Step 2: Define the RP Interaction Parameters<a class="headerlink" href="#step-2-define-the-rp-interaction-parameters" title="Link to this heading">#</a></h2>
+<p>A ram pressure interaction in GalaRP is primarily done by assuming spherical gas blobs, and the Gunn and Gott (1972)
+stripping criterion.</p>
+<div class="math notranslate nohighlight">
+\[P_{\text{ram}} = \rho_{\text{ICM}} v^2\]</div>
+<p>where <span class="math notranslate nohighlight">\(\rho_{\text{ICM}}\)</span> is the ICM density, and <span class="math notranslate nohighlight">\(v\)</span> is the relative velocity between the satellite and
+the medium it is travelling through.</p>
+<p>For this example, we will define a simple time-variable <em>Lorentzian wind</em> that follows a Lorentzian profile, similar to
+the computed ram pressure profiles for a galaxy’s orbit through a cluster.</p>
+<div class="math notranslate nohighlight">
+\[v_{i}(t) = \frac{v_{i, \text{max}}}{(2(t - t_0) / w)^2 + 1}\]</div>
+<p>where <span class="math notranslate nohighlight">\(t_0\)</span> is the time of peak ram pressure, which we set as 400 Myr into the simulation,
+and <span class="math notranslate nohighlight">\(w\)</span> is the characteristic width of the Lorentzian profile, which we set as a Gyr. The angle of
+the wind is 45 degrees, and the peak velocity is 700 km/s.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">phi</span> <span class="o">=</span> <span class="mf">45.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">strength</span> <span class="o">=</span> <span class="mi">700</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">wind</span> <span class="o">=</span> <span class="n">gn</span><span class="o">.</span><span class="n">LorentzianWind</span><span class="p">(</span><span class="n">units</span><span class="o">=</span><span class="n">galactic</span><span class="p">,</span> <span class="n">t0</span><span class="o">=</span><span class="mi">400</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Myr</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1000</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Myr</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">wind</span><span class="o">.</span><span class="n">init_from_inc</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">phi</span><span class="p">),</span> <span class="n">strength</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">km</span>  <span class="o">/</span> <span class="n">u</span><span class="o">.</span><span class="n">s</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
 </section>
 
 
@@ -386,11 +428,11 @@ document.write(`
       </div>
     </a>
     <a class="right-next"
-       href="quickstart.html"
+       href="running.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Quick Start</p>
+        <p class="prev-next-title">Running GalaRP</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -403,6 +445,19 @@ document.write(`
               
                 <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-1-create-a-satellite-galaxy-potential">Step 1: Create a Satellite Galaxy Potential</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-2-define-the-rp-interaction-parameters">Step 2: Define the RP Interaction Parameters</a></li>
+</ul>
+  </nav></div>
 
   <div class="sidebar-secondary-item">
 
