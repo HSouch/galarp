@@ -6,5 +6,7 @@ galarp.egg-info/
 dist
 notebooks
 
-galarp/__pycache__/*.pyc
+galarp/__pycache__/*
 galarp/tests/__pycache__/*.pyc
+galarp/builtins/__pycache__/*.pyc
+galarp/builtins/tests/__pycache__/*.pyc
