@@ -8,5 +8,7 @@ notebooks
 
 galarp/__pycache__/*
 galarp/tests/__pycache__/*.pyc
+galarp/hosts/__pycache__/*.pyc
 galarp/builtins/__pycache__/*.pyc
 galarp/builtins/tests/__pycache__/*.pyc
+galarp/postprocessing/__pycache__/*.pyc
