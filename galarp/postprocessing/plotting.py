@@ -7,7 +7,9 @@ from matplotlib import pyplot as plt
 import matplotlib as mpl
 
 
-from .. import utils
+from . import utils
+
+__all__ = ["pyplot_style", "get_orbit_data", "k3d_plot", "plot_orbits"]
 
 
 def pyplot_style():
