@@ -4,7 +4,10 @@ exclude = [
     "__pycache__",
     ".nox",
     ".pytest_cache",
-    "tox"
+    "tox",
+    "__init__"
 ]
+
+ignore = ["F403"]
 
 line-length=88

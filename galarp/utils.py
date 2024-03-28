@@ -6,8 +6,6 @@ from astropy import constants as c
 from astropy import units as u
 import numpy as np
 
-from matplotlib import pyplot as plt
-import matplotlib.patches as patches
 
 from scipy.interpolate import interp1d
 

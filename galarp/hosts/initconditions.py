@@ -1,4 +1,3 @@
-from astropy import units as u
 
 
 class InitConditions:

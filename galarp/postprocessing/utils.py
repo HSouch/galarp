@@ -139,9 +139,6 @@ def diagnostic_3ax(rpsim, length=3, wind_vec_loc=(0, 0, 0), outname=None):
 
     vector = rpsim.wind.normalized().value
 
-    x0 = y0 = z0 = 0
-    x1, y1, z1 = vector * length
-
     plot_wind_vector(vector, ax, length=length, loc=wind_vec_loc)
 
     xlabels, ylabels = ["x", "x", "y"], ["y", "z", "z"]

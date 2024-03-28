@@ -6,7 +6,6 @@ import numpy as np
 
 from scipy.interpolate import interp1d
 
-from tqdm import tqdm
 
 
 __all__ = [

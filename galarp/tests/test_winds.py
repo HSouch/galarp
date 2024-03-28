@@ -2,7 +2,6 @@
 import numpy as np
 from astropy import units as u
 
-from scipy.interpolate import interp1d
 
 from .helpers import RPWindTestBase
 from ..winds import RPWind, LorentzianWind, StepFunctionWind, InterpolatedWind

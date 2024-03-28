@@ -2,9 +2,6 @@
 from .. import hosts
 from .. import satellites
 
-from ...utils import Rvir, R100, R500
-
-from astropy import units as u
 import gala.dynamics as gd
 import gala.potential as gp
 
@@ -28,8 +25,8 @@ class BuiltInPotentialTestBase:
         assert len(orbit.pos) == nsteps + 1
         assert type(orbit) == gd.Orbit
     
-    def test_rs(self):
-        mass = self.potential.mass_enclosed([500, 0., 0.] * u.Mpc)
+    # def test_rs(self):
+    #     mass = self.potential.mass_enclosed([500, 0., 0.] * u.Mpc)
         
 
 

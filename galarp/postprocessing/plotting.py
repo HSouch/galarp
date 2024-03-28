@@ -85,7 +85,7 @@ def k3d_plot(
     for i, container in enumerate(orbit_containers):
         orbits = container.data
 
-        pos, vel = orbits.pos, orbits.vel
+        pos = orbits.pos
 
         p_x, p_y, p_z = pos.xyz.value
         if transpose:
@@ -149,7 +149,7 @@ def plot_orbits(
 
     fig, ax = plt.subplots(1, 3, figsize=(12, 5))
 
-    pos, vel = data.pos, data.vel
+    pos = data.pos
 
     x, y, z = pos.xyz
     x, y, z = x.T, y.T, z.T

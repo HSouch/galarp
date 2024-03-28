@@ -4,20 +4,16 @@
 import os
 import pickle
 import astropy.units as u
-from astropy.units import Quantity
 import numpy as np
 
 from tqdm import tqdm
 
-from matplotlib import pyplot as plt
-
 from .postprocessing import plotting
 
 # This module
-from . import shadows, utils, winds
+from . import shadows, winds
 
 import gala.dynamics as gd
-import gala.potential as gp
 from gala.units import galactic
 
 
@@ -109,7 +105,6 @@ class RPSim:
         outdir=None,
         debug=False,
     ):
-        wind_vector = self.wind.vector.to(u.kpc / u.Myr).value
 
         if type(rho_icm) is u.Quantity:
             self.rho_icm = winds.Density(rho_icm)

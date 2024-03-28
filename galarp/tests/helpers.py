@@ -1,5 +1,3 @@
-import pytest
-from ..shadows import ShadowBase
 
 
 class ShadowTestBase:

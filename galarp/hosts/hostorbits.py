@@ -1,5 +1,5 @@
 from gala import dynamics as gd
-from gala import integrate as gi 
+
 from gala import potential as gp
 
 

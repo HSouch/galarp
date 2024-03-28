@@ -8,7 +8,6 @@ import numpy as np
 
 # This module
 import galarp as grp
-from . import utils
 
 from gala.units import galactic
 import astropy.units as u

@@ -1,13 +1,9 @@
-import numpy as np
 
 from astropy import units as u
-from astropy import constants as const
 
 from gala import potential as gp
-
 from gala.units import galactic
 
-from astropy.cosmology import WMAP9 as cosmo
 
 
 def JZ2023_1e12():

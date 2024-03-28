@@ -140,7 +140,7 @@ class ExponentialGrid(ParticleGrid):
                 zmax=self.zmax,
                 outname=None,
             )
-        elif type(positions) == str:  # If string assume this is a filename
+        elif isinstance(positions, str):    # If string assume this is a filename
             xs, ys, zs = self.load_positions(positions)
         else:
             xs, ys, zs = positions
