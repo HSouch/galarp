@@ -26,3 +26,4 @@ class RPWindTestBase:
 
     def test_init(self):
         assert self.wind is not None
+        
