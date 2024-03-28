@@ -2,9 +2,6 @@
 #!/usr/bin/env python
 # Licensed under an MIT license - see LICENSE
 
-import os
-import sys
-
 from galarp import __version__
 
 

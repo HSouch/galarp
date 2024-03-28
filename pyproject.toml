@@ -1,0 +1,10 @@
+
+[tool.ruff]
+exclude = [
+    "__pycache__",
+    ".nox",
+    ".pytest_cache",
+    "tox"
+]
+
+line-length=88
