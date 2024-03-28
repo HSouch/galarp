@@ -10,7 +10,7 @@ from gala.units import galactic
 from astropy.cosmology import WMAP9 as cosmo
 
 
-def JZ2023_10e12():
+def JZ2023_1e12():
     """ 10^12 Msun NFW host halo from Zhu+2023
         (https://iopscience.iop.org/article/10.3847/1538-4357/acfe6f)
 
@@ -25,7 +25,7 @@ def JZ2023_10e12():
                                         units=galactic)
 
 
-def JZ2023_10e13():
+def JZ2023_1e13():
     """ 10^13 Msun NFW host halo from Zhu+2023
         (https://iopscience.iop.org/article/10.3847/1538-4357/acfe6f)
 
@@ -39,7 +39,7 @@ def JZ2023_10e13():
                                         c=c_NFW, 
                                         units=galactic)
 
-def JZ2023_10e14():
+def JZ2023_1e14():
     """ 10^14 Msun NFW host halo from Zhu+2023
         (https://iopscience.iop.org/article/10.3847/1538-4357/acfe6f)
     

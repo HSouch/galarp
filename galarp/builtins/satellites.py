@@ -4,7 +4,7 @@ from gala import potential as gp
 from gala.units import galactic
 
 
-def JZ2023_Combined():
+def JZ2023_Satellite():
 
     dm = gp.BurkertPotential(rho=5.93e-25 * u.g / u.cm**3, r0=11.87 * u.kpc, units=galactic)
 
