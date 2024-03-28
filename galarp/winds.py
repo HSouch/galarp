@@ -151,7 +151,7 @@ class InterpolatedWind(RPWind):
 
         ts = t[time_key] * ts_format.to(u.Myr)
 
-        if type(vel_keys) is not list:
+        if not isinstance(vel_keys, list): 
             vel_keys = [vel_keys]
 
         vels = np.array([t[key] for key in vel_keys])
