@@ -11,8 +11,10 @@ from tqdm import tqdm
 
 from matplotlib import pyplot as plt
 
+from .postprocessing import plotting
+
 # This module
-from . import plotting, shadows, utils, winds
+from . import shadows, utils, winds
 
 import gala.dynamics as gd
 import gala.potential as gp
@@ -230,6 +232,8 @@ def save_orbits(orbits, name="auto", outdir=""):
 
 
 class OrbitContainer:
+    """ Container for storing orbits and metadata from a completed GalaRP run.
+    """
     def __init__(self, data, units=None, metadata={}):
         self.data = data
         self.units = units

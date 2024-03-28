@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 import matplotlib as mpl
 
 
-from . import utils
+from .. import utils
 
 
 def pyplot_style():
