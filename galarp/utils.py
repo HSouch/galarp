@@ -1,6 +1,7 @@
 # Plotting routines and convenience functions.
 
 # 3rd Party
+from astropy.cosmology import WMAP9 as cosmo
 from astropy import constants as c
 from astropy import units as u
 import numpy as np
@@ -62,3 +63,34 @@ def get_orbit_data(o):
 def pickle_obj(obj, name="obj.out"):
     with open(name, "wb") as f:
         pickle.dump(obj, f)
+
+
+def Rvir(mass):
+    """ Returns the virial radius of the potential """
+    
+    mass = mass.to(u.Msun)
+
+    rho_c = 3 * cosmo.H(0.)**2 / (8*np.pi*c.G)
+    rho_c = rho_c.to(u.Msun/u.kpc**3)
+
+    return np.cbrt(mass / (200*rho_c.value) / (4/3*np.pi))
+
+def R100(mass):
+    """ Returns the radius at which the density is 100 times the critical density """
+    
+    mass = mass.to(u.Msun)
+
+    rho_c = 3 * cosmo.H(0.)**2 / (8*np.pi*c.G)
+    rho_c = rho_c.to(u.Msun/u.kpc**3)
+
+    return np.cbrt(mass / (100*rho_c.value) / (4/3*np.pi))
+
+def R500(mass):
+    """ Returns the radius at which the density is 500 times the critical density """
+    
+    mass = mass.to(u.Msun)
+
+    rho_c = 3 * cosmo.H(0.)**2 / (8*np.pi*c.G)
+    rho_c = rho_c.to(u.Msun/u.kpc**3)
+
+    return np.cbrt(mass / (500*rho_c.value) / (4/3*np.pi))
