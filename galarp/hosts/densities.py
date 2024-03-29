@@ -1,35 +1,32 @@
 from astropy import units as u
 
 
-def SphericalBetaModel(r, n0 = 0.0121 * u.cm ** -3, 
-                       r_c=25 * u.kpc, 
-                       beta = 0.655):
-    """ The spherical beta model for the Milky Way halo.
+class DensityModel:
 
-    Args:
-        r (astropy.quantity): The input radius
-        n0 (Astropy quantity, optional): _description_. Defaults to 0.0121 .
-        r_c (astropy.quantity, optional): _description_. Defaults to 25*u.kpc.
-        beta (float, optional): _description_. Defaults to 0.655.
+    def __init__(self, name=None):
+        self.name = name
 
-    Returns:
-        astropy.quantity : The number density at the input radius
-    """
-    return n0 * (1 + (r / r_c) ** 2) ** (-3 * beta / 2)
+    def evaluate(self, r):
+        raise NotImplementedError
 
 
-def MB2015ModifiedBeta(r, n0 = 0.0121 * u.cm ** -3, 
-                       r_c=25 * u.kpc,
-                       beta =0.655):
-    """ The Miller and Bregman (2015) modified beta model for the Milky Way halo.
+class SphericalBetaModel(DensityModel):
+    def __init__(self, n0=0.0121 * u.cm ** -3, r_c=25 * u.kpc, beta=0.655):
+        super().__init__("Spherical Beta Model")
+        self.n0 = n0
+        self.r_c = r_c
+        self.beta = beta
 
-    Args:
-        r (astropy.quantity): _description_
-        n0 (Astropy quantity, optional): _description_. Defaults to 0.0121 .
-        r_c (_type_, optional): _description_. Defaults to 25*u.kpc.
-        beta (float, optional): _description_. Defaults to 0.655.
+    def evaluate(self, r):
+        return self.n0 * (1 + (r / self.r_c) ** 2) ** (-3 * self.beta / 2)
 
-    Returns:
-        _type_: _description_
-    """
-    return n0 * r_c ** (3 * beta)  / r ** (3 * beta)
+
+class MB2015ModifiedBeta(DensityModel):
+    def __init__(self, n0=0.0121 * u.cm ** -3, r_c=25 * u.kpc, beta=0.655):
+        super().__init__("Miller and Bregman (2015) Modified Beta Model")
+        self.n0 = n0
+        self.r_c = r_c
+        self.beta = beta
+
+    def evaluate(self, r):
+        return self.n0 * self.r_c ** (3 * self.beta) / r ** (3 * self.beta)
