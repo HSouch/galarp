@@ -10,7 +10,7 @@ import matplotlib as mpl
 from . import utils
 
 __all__ = ["pyplot_style", "get_orbit_data", "k3d_plot", "plot_orbits"]
-
+    
 
 def pyplot_style():
     # xticks
@@ -38,7 +38,7 @@ def pyplot_style():
 
     mpl.rc("font", **font)
 
-    mpl.rc("lines", linewidth=1, linestyle="solid")
+    mpl.rc("lines", linewidth=1, linestyle="solid", color="black")
 
 
 def get_orbit_data(o):
