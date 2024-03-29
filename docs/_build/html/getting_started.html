@@ -397,12 +397,48 @@ the computed ram pressure profiles for a galaxy’s orbit through a cluster.</p>
 \[v_{i}(t) = \frac{v_{i, \text{max}}}{(2(t - t_0) / w)^2 + 1}\]</div>
 <p>where <span class="math notranslate nohighlight">\(t_0\)</span> is the time of peak ram pressure, which we set as 400 Myr into the simulation,
 and <span class="math notranslate nohighlight">\(w\)</span> is the characteristic width of the Lorentzian profile, which we set as a Gyr. The angle of
-the wind is 45 degrees, and the peak velocity is 700 km/s.</p>
+the wind is 45 degrees, and the peak velocity is 700 km/s. We first initialize the object, and define the wind
+vector using <code class="code docutils literal notranslate"><span class="pre">init_from_inc</span></code>.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">phi</span> <span class="o">=</span> <span class="mf">45.0</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">strength</span> <span class="o">=</span> <span class="mi">700</span>
 <span class="gp">&gt;&gt;&gt;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">wind</span> <span class="o">=</span> <span class="n">gn</span><span class="o">.</span><span class="n">LorentzianWind</span><span class="p">(</span><span class="n">units</span><span class="o">=</span><span class="n">galactic</span><span class="p">,</span> <span class="n">t0</span><span class="o">=</span><span class="mi">400</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Myr</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1000</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Myr</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">wind</span><span class="o">.</span><span class="n">init_from_inc</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">phi</span><span class="p">),</span> <span class="n">strength</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">km</span>  <span class="o">/</span> <span class="n">u</span><span class="o">.</span><span class="n">s</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We also will specify an RP shadow, which models the reduction in ram pressure strength because the wind runs into the
+disk. We will specify that the wind strength is reduced to 40% of the total when inside the shadow, which is
+effectively a “tilted cylinder” along the wind direction.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">shadow</span> <span class="o">=</span> <span class="n">gn</span><span class="o">.</span><span class="n">UniformShadow</span><span class="p">(</span><span class="n">damping</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">shadow</span><span class="o">.</span><span class="n">init_from_wind</span><span class="p">(</span><span class="n">wind</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="step-3-define-the-parameter-grid">
+<h2>Step 3: Define the Parameter Grid<a class="headerlink" href="#step-3-define-the-parameter-grid" title="Link to this heading">#</a></h2>
+<p>Lastly, we need to define the particles that we are simulating. In this case, we will use a simple uniform grid of
+evenly-spaced particles, which are helpful for showing <cite>where</cite> in the disk particles will get perturbed or stripped.
+To initialize the particles we need a mass profile from the potential, which we can get using GalaRP.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">mass_profile</span> <span class="o">=</span> <span class="n">grp</span><span class="o">.</span><span class="n">gen_mass_profile</span><span class="p">(</span><span class="n">pot</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">uniform</span> <span class="o">=</span> <span class="n">gn</span><span class="o">.</span><span class="n">UniformGrid</span><span class="p">(</span><span class="n">n_particles</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">uniform</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">mass_profile</span><span class="o">=</span><span class="n">mass_profile</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="step-4-run-the-simulation">
+<h2>Step 4: Run the Simulation<a class="headerlink" href="#step-4-run-the-simulation" title="Link to this heading">#</a></h2>
+<p>With all the components in hand we call the RPSim object to run the ram pressure interaction. We will run the
+simulation for 2 Gyr at 2 Myr spacing.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sim</span> <span class="o">=</span> <span class="n">grp</span><span class="o">.</span><span class="n">RPSim</span><span class="p">(</span><span class="n">wind</span><span class="o">=</span><span class="n">wind</span><span class="p">,</span> <span class="n">potential</span><span class="o">=</span><span class="n">pot</span><span class="p">,</span> <span class="n">shadow</span><span class="o">=</span><span class="n">shadow</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">orbits</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">wind_on</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">rho_icm</span><span class="o">=</span><span class="mf">1e-26</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">g</span> <span class="o">/</span> <span class="n">u</span><span class="o">.</span><span class="n">cm</span><span class="o">**</span><span class="mi">3</span><span class="p">,</span>
+<span class="go">                     integration_time=2000 * u.Myr, dt=2 * u.Myr,</span>
+<span class="go">                     m_cloud=1e6 * u.Msun, printout=True)</span>
+</pre></div>
+</div>
+<p>The RP simulation spits out an OrbitContainer object which contains both the integrated Gala orbits, as well as a
+metadata dictionary object that contains the parameters used in the simulation. These can be plotted simply, or
+passed to GalaRP’s postpcrocessing tools for more detailed analysis.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">orbits</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 </pre></div>
 </div>
 </section>
@@ -456,6 +492,8 @@ the wind is 45 degrees, and the peak velocity is 700 km/s.</p>
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-1-create-a-satellite-galaxy-potential">Step 1: Create a Satellite Galaxy Potential</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-2-define-the-rp-interaction-parameters">Step 2: Define the RP Interaction Parameters</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-3-define-the-parameter-grid">Step 3: Define the Parameter Grid</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-4-run-the-simulation">Step 4: Run the Simulation</a></li>
 </ul>
   </nav></div>
 

@@ -39,6 +39,7 @@
     <script src="_static/documentation_options.js?v=5929fcd5"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'rp_profile';</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -363,6 +364,41 @@ document.write(`
                   
   <section id="determining-the-ram-pressure-profile">
 <h1>Determining the Ram Pressure Profile<a class="headerlink" href="#determining-the-ram-pressure-profile" title="Link to this heading">#</a></h1>
+<p>The key factor for a ram pressure interaction is the <em>ram pressure profile</em>. An infalling galaxy will experience a
+time-variable wind strength. The ram pressure goes as <span class="math notranslate nohighlight">\(P_\text{ram} = \rho v^2\)</span>. As a galaxy approaches
+pericenter, both the local medium density and the velocity increases to a peak at pericenter, where it then steadily
+decreases. Therefore, implementing a time-variable strength of ram pressure on a galaxy is considerably more physically
+realistic than a more simple <em>constant wind</em>.</p>
+<section id="getting-a-ram-pressure-profile-from-an-infalling-orbit">
+<h2>Getting a Ram Pressure Profile from an Infalling Orbit<a class="headerlink" href="#getting-a-ram-pressure-profile-from-an-infalling-orbit" title="Link to this heading">#</a></h2>
+<p><strong>GalaRP</strong> has built-in classes to make this proceess seamless and easy for users, whether they want to initialize a
+ram pressure profile from a Gala-integrated infalling orbit, or manually defining the profile</p>
+<p>A typical density profile for a galaxy cluster is given by the Beta profile:</p>
+<div class="math notranslate nohighlight">
+\[n(r) = n_0\biggl[1 + \biggl(\frac{r}{r_c}\biggr)^2\biggr]^{-3\beta / 2}\]</div>
+<p>where <span class="math notranslate nohighlight">\(n_0\)</span> is the central density and <span class="math notranslate nohighlight">\(r_c\)</span> is the core radius. This can be converted into a mass density
+by assuming a gas mass, commonly by multiplying by an atomic mass unit (in grams) to assume ionized atomic Hydrogen.</p>
+<p>To make a ram pressure profile, we can use the <strong>GalaRP</strong> HostOrbit class. To make complete use of this class we have
+to specify the host potential, the initial position and velocity conditions, and the host density model.
+Like with some of our other examples, we
+will use initial conditions given in <a class="reference external" href="https://iopscience.iop.org/article/10.3847/1538-4357/acfe6f/pdf/">Zhu+2023</a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">galarp</span> <span class="k">as</span> <span class="nn">grp</span>
+
+<span class="n">test_host_potential</span> <span class="o">=</span> <span class="n">grp</span><span class="o">.</span><span class="n">builtins</span><span class="o">.</span><span class="n">JZ2023_1e14</span><span class="p">()</span>
+<span class="n">init_conditions</span> <span class="o">=</span> <span class="n">grp</span><span class="o">.</span><span class="n">builtins</span><span class="o">.</span><span class="n">JZ2023_1e14_IC</span><span class="p">()</span>
+
+<span class="n">host_1e14</span> <span class="o">=</span> <span class="n">grp</span><span class="o">.</span><span class="n">HostOrbit</span><span class="p">(</span><span class="n">potential</span><span class="o">=</span><span class="n">test_host_potential</span><span class="p">,</span>
+                        <span class="n">init_conditions</span><span class="o">=</span><span class="n">init_conditions</span><span class="p">,</span>
+                        <span class="n">density</span><span class="o">=</span><span class="n">grp</span><span class="o">.</span><span class="n">SphericalBetaModel</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>To generate our orbit, simply call <code class="code docutils literal notranslate"><span class="pre">host.integrate()</span></code> on your HostOrbit object. You can also generate a simple
+plot showing the orbit, along with the computed density and ram pressure profiles.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">host_1e14</span><span class="o">.</span><span class="n">integrate</span><span class="p">(</span><span class="n">n_steps</span><span class="o">=</span><span class="mi">10000</span><span class="p">)</span>          <span class="c1"># Integrate orbits</span>
+<span class="n">host_1e14</span><span class="o">.</span><span class="n">plot_infall_orbit</span><span class="p">()</span>               <span class="c1"># Plot orbits</span>
+</pre></div>
+</div>
+<img src="_static/plots/infall_orbit.png" width="80%%"  style="margin-bottom: 32px;"/></section>
 </section>
 
 
@@ -402,6 +438,18 @@ document.write(`
               
                 <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#getting-a-ram-pressure-profile-from-an-infalling-orbit">Getting a Ram Pressure Profile from an Infalling Orbit</a></li>
+</ul>
+  </nav></div>
 
   <div class="sidebar-secondary-item">
 
