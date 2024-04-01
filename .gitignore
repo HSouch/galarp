@@ -2,7 +2,7 @@
 .VSCodeCounter
 
 galarp.egg-info/PKG-INFO
-galarp.egg-info/
+galarp.egg-info
 
 
 dist
