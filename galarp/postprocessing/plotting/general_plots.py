@@ -1,45 +1,13 @@
-import os
+from astropy import units as u
 import numpy as np
-import astropy.units as u
+import os
 
+from .. import utils            # TODO This is horrible, but it works for now. Refactor the top-level utils file.
 
 from matplotlib import pyplot as plt
-import matplotlib as mpl
 
 
-from . import utils
-
-__all__ = ["pyplot_style", "get_orbit_data", "k3d_plot", "plot_orbits"]
-    
-
-def pyplot_style():
-    # xticks
-    mpl.rcParams["xtick.major.size"] = 3
-    mpl.rcParams["xtick.major.width"] = 2
-    mpl.rcParams["xtick.minor.size"] = 2
-    mpl.rcParams["xtick.minor.width"] = 1
-
-    # yticks
-    mpl.rcParams["ytick.major.size"] = 3
-    mpl.rcParams["ytick.major.width"] = 2
-    mpl.rcParams["ytick.minor.size"] = 2
-    mpl.rcParams["ytick.minor.width"] = 1
-
-    mpl.rcParams["axes.linewidth"] = 1.5
-
-    mpl.rc("xtick", labelsize=12)
-    mpl.rc("ytick", labelsize=12)
-
-    font = {
-        "family": "serif",
-        #'weight': 'bold',
-        "size": 12,
-    }
-
-    mpl.rc("font", **font)
-
-    mpl.rc("lines", linewidth=1, linestyle="solid", color="black")
-
+__all__ = ["get_orbit_data", "k3d_plot", "plot_orbits", "plot_density", "plot_density_3ax"]
 
 def get_orbit_data(o):
     pos, vel = o.pos, o.vel
@@ -185,5 +153,90 @@ def plot_orbits(
     plt.tight_layout()
     if plot_dir is not None:
         plt.savefig(f"{plot_dir}{title}.pdf")
+    else:
+        plt.show()
+
+
+
+def plot_density(xyz, gridsize=40, outname=None, **kwargs):
+    """ Generate hexbin plots of the x-y and x-z particle densities.
+
+    Args:
+        gridsize (int): Number of bins in the hexbin plots.
+        outname (str): Filename for saving the output plot. Will just run plt.show() if None.
+    """
+    figsize = kwargs.get("figsize", (8, 5))
+    Rmax = kwargs.get("Rmax", 15)
+    zmax = kwargs.get("zmax", 3)
+    cmap = kwargs.get("cmap", "inferno")
+
+    x, y, z = xyz
+    lim = (-Rmax * 1.1, Rmax * 1.1)
+    gridsize_z = int(gridsize * zmax / Rmax)
+
+    fig, ax = plt.subplots(1, 2, figsize=figsize)
+
+    hist1 = ax[0].hexbin(x, y, bins="log", cmap=cmap, gridsize=gridsize)
+    hist2 = ax[1].hexbin(x, z, bins="log", cmap=cmap, gridsize=(gridsize, gridsize_z))
+    
+    for axis in ax.flatten():
+        axis.set(xlim=lim, ylim=lim)
+
+    ax[0].set_xlabel("x [kpc]")
+    ax[0].set_ylabel("y [kpc]")
+    ax[1].set_xlabel("x [kpc]")
+    ax[1].set_ylabel("z [kpc]")
+
+    plt.colorbar(mappable=hist1, ax=ax[0], location="top")
+    plt.colorbar(mappable=hist2, ax=ax[1], location="top")
+
+    plt.tight_layout()
+    
+    if outname is not None:
+        plt.savefig(outname)
+    else:
+        plt.show()
+
+
+def plot_density_3ax(xyz, gridsize=40, outname=None, **kwargs):
+    """ Generate hexbin plots for all 3 principle axes of the particle densities.
+
+    Args:
+        gridsize (int): Number of bins in the hexbin plots.
+        outname (str): Filename for saving the output plot. Will just run plt.show() if None.
+    """
+    figsize = kwargs.get("figsize", (12, 5))
+    Rmax = kwargs.get("Rmax", 15)
+    zmax = kwargs.get("zmax", 3)
+    cmap = kwargs.get("cmap", "inferno")
+
+    x, y, z = xyz
+    lim = (-Rmax * 1.1, Rmax * 1.1)
+    gridsize_z = int(gridsize * zmax / Rmax)
+
+    fig, ax = plt.subplots(1, 3, figsize=figsize)
+
+    hist1 = ax[0].hexbin(x, y, bins="log", cmap=cmap, gridsize=gridsize)
+    hist2 = ax[1].hexbin(x, z, bins="log", cmap=cmap, gridsize=(gridsize, gridsize_z))
+    hist3 = ax[2].hexbin(y, z, bins="log", cmap=cmap, gridsize=(gridsize, gridsize_z))
+
+    for axis in ax.flatten():
+        axis.set(xlim=lim, ylim=lim)
+
+    ax[0].set_xlabel("x [kpc]")
+    ax[0].set_ylabel("y [kpc]")
+    ax[1].set_xlabel("x [kpc]")
+    ax[1].set_ylabel("z [kpc]")
+    ax[2].set_xlabel("y [kpc]")
+    ax[2].set_ylabel("z [kpc]")
+
+    plt.colorbar(mappable=hist1, ax=ax[0], location="top")
+    plt.colorbar(mappable=hist2, ax=ax[1], location="top")
+    plt.colorbar(mappable=hist3, ax=ax[2], location="top")
+
+    plt.tight_layout()
+    
+    if outname is not None:
+        plt.savefig(outname)
     else:
         plt.show()
