@@ -9,6 +9,5 @@ from . import builtins
 
 from .hosts import *
 from .postprocessing import *
-from .postprocessing.plotting import *
 
 __version__ = "0.0.2"
