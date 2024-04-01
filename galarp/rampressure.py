@@ -8,7 +8,7 @@ import numpy as np
 
 from tqdm import tqdm
 
-from .postprocessing import plotting
+from .postprocessing import utils
 
 # This module
 from . import shadows, winds
@@ -237,9 +237,9 @@ class OrbitContainer:
 
     def plot(self, plot_3d=False, plot_orbits=False):
         if plot_3d:
-            plotting.k3d_plot([self])
+            utils.k3d_plot([self])
 
         if plot_orbits:
-            plotting.plot_orbits(
+            utils.plot_orbits(
                 self.data, wind=self.metadata["WIND"], shadow=self.metadata["SHADOW"]
             )

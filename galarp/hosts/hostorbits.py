@@ -35,6 +35,7 @@ class HostOrbit:
 
     def velocities(self, units = u.km/u.s):
         dx, dy, dz = self.orbit.vel
+        v = np.sqrt(dx**2 + dy**2 + dz**2).to(units)
 
 
     def gen_ENZO_filename(self, units = UnitSystem(u.cm, u.s, u.radian, u.g)
