@@ -52,3 +52,8 @@ class TestJZ2023_Satellite(BuiltInPotentialTestBase):
     
     name = "JZ2023_Satellite"
     potential = satellites.JZ2023_Satellite()
+
+
+class TestNA2023_Satellite(BuiltInPotentialTestBase):
+    name = "NA2023_Satellite"
+    potential = satellites.NA2023_Satellite()

@@ -24,4 +24,15 @@ class RPWindTestBase:
 
     def test_init(self):
         assert self.wind is not None
-        
+
+
+class ParticleGridTestBase:
+    name = "ParticleGrids"
+    grid = None
+    show_plots = False
+
+    def test_init(self):
+        assert self.grid is not None
+        assert isinstance(self.grid.container, list) 
+    
+    
