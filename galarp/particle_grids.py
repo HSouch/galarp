@@ -2,6 +2,7 @@ import numpy as np
 from astropy import units as u
 from matplotlib import pyplot as plt
 
+from .postprocessing.plotting import general_plots
 import gala.dynamics as gd
 from . import utils
 
@@ -28,8 +29,9 @@ class ParticleGrid:
             subclass."
         )
 
-    def plot_phase_space(self, ax, color="black", outname=None):
-        fig, ax = plt.subplots(1, 2, facecolor="white", figsize=(8, 4))
+    def plot_phase_space(self, ax=None, color="black", outname=None):
+        if ax is None:
+            fig, ax = plt.subplots(1, 2, facecolor="white", figsize=(8, 4))
         for particle in self.container:
             ax[0].scatter(particle.x, particle.y, color=color)
             ax[1].scatter(particle.v_x, particle.v_y, color=color)
@@ -39,6 +41,50 @@ class ParticleGrid:
             plt.savefig(outname, dpi=200)
         else:
             plt.show()
+    
+    def get_xyz(self):
+        x, y, z = [], [], []
+        for particle in self.container:
+            x.append(particle.x.value)
+            y.append(particle.y.value)
+            z.append(particle.z.value)
+        return x, y, z
+
+
+    def plot_grid(self, **kwargs):
+        """ Plot the grid of particles in the xy and xz planes. """
+        particle_size = kwargs.get("particle_size", 1)
+        max_particles = kwargs.get("max_particles", 1000)
+
+        fig, ax = plt.subplots(1, 2, facecolor="white", figsize=(8, 4))
+        xs, ys, zs = self.get_xyz()
+
+        ax[0].scatter(xs, ys, color="black", s=particle_size)
+        ax[1].scatter(xs, zs, color="black", s=particle_size)
+        
+        ax[0].set_xlabel("x [kpc]")
+        ax[0].set_ylabel("y [kpc]")
+        ax[1].set_xlabel("x [kpc]")
+        ax[1].set_ylabel("z [kpc]")
+        
+        ax[0].set_xlim(-self.Rmax.value, self.Rmax.value)
+        ax[0].set_ylim(-self.Rmax.value, self.Rmax.value)
+        ax[1].set_xlim(-self.Rmax.value, self.Rmax.value)
+        ax[1].set_ylim(-self.Rmax.value, self.Rmax.value)
+
+        plt.tight_layout()
+        plt.show()
+    
+
+    def plot_density(self, gridsize=40, outname=None, **kwargs):
+        """ Generate hexbin plots of the x-y and x-z particle densities.
+
+        Args:
+            gridsize (int): Number of bins in the hexbin plots.
+            outname (str): Filename for saving the output plot. Will just run plt.show() if None.
+        """
+        general_plots.plot_density(self.get_xyz(), gridsize=gridsize, outname=outname,  **kwargs)
+
 
     def save(self, outname):
         utils.pickle_obj(self.container, outname)
@@ -136,7 +182,7 @@ class ExponentialGrid(ParticleGrid):
                 h_R=self.h_R,
                 h_z=self.h_z,
                 n_particles=self.n_particles,
-                rmax=self.Rmax,
+                Rmax=self.Rmax,
                 zmax=self.zmax,
                 outname=None,
             )
@@ -186,17 +232,23 @@ class ExponentialGrid(ParticleGrid):
         return positions
 
     def velocity(self, mass_profile, R, theta):
+        """ Get the velocity of a particle in the xy plane given an angle and the mass profile
+        
+        Args:
+            mass_profile (interp1d): The mass profile of the potential in scipy interp1d format.
+            R (float): The radius of the particle.
+            theta (float): The angle of the particle.
+        """
         vx = -utils.v_circ(mass_profile(R) * u.M_sun, R) * np.sin(theta)
         vy = utils.v_circ(mass_profile(R) * u.M_sun, R) * np.cos(theta)
         return vx, vy
 
 
 def generate_exponential_positions(
-    self,
     n_particles,
     h_R=4 * u.kpc,
     h_z=0.5 * u.kpc,
-    rmax=15 * u.kpc,
+    Rmax=15 * u.kpc,
     zmax=2 * u.kpc,
     outname=None,
 ):
@@ -207,9 +259,9 @@ def generate_exponential_positions(
         1 / (4 * np.pi * h_R**2 * h_z).value
     )  # This normalizes the probability distribution
 
-    h_R, h_z = self.h_R.to(u.kpc).value, self.h_z.to(u.kpc).value
-    rmax = self.Rmax.to(u.kpc).value
-    zmax = self.zmax.to(u.kpc).value
+    h_R, h_z = h_R.to(u.kpc).value, h_z.to(u.kpc).value
+    rmax = Rmax.to(u.kpc).value
+    zmax = zmax.to(u.kpc).value
 
     Rs = []
     zs = []
