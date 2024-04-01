@@ -1,4 +1,6 @@
 
+.VSCodeCounter
+
 galarp.egg-info/PKG-INFO
 galarp.egg-info/
 
@@ -6,9 +8,13 @@ galarp.egg-info/
 dist
 notebooks
 
-galarp/__pycache__/*
-galarp/tests/__pycache__/*.pyc
-galarp/hosts/__pycache__/*.pyc
-galarp/builtins/__pycache__/*.pyc
-galarp/builtins/tests/__pycache__/*.pyc
-galarp/postprocessing/__pycache__/*.pyc
+galarp/__pycache__
+galarp/tests/__pycache__
+galarp/hosts/__pycache__
+galarp/builtins/__pycache__
+galarp/builtins/tests/__pycache__
+galarp/postprocessing/__pycache__
+galarp/postprocessing/plotting/__pycache__
+
+paper/figures
+paper/temp
