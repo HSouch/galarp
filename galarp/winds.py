@@ -130,6 +130,7 @@ class InterpolatedWind(RPWind):
     """
     def __init__(self, interp=None, inc=np.deg2rad(90), **kwargs):
         super().__init__(**kwargs)
+        self.inc = inc
         self.vector = kwargs.get('vector', u.Quantity([np.cos(inc), 0, np.sin(inc)]) * u.km/u.s)
 
         self.interp = interp
@@ -142,7 +143,12 @@ class InterpolatedWind(RPWind):
         return self.unit_vector * self.interp(t)
     
 
-    def from_table(self, fn, time_key, vel_keys, format='ascii', verbose=False, v_format=u.cm/u.s, ts_format=u.s):
+    def from_xy(self, xs, ys):
+        self.interp = interp1d(xs, ys, bounds_error=False, fill_value='extrapolate')
+
+    @staticmethod
+    def from_table(fn, time_key, vel_keys, format='ascii', verbose=False, v_format=u.cm/u.s, ts_format=u.s, 
+                   **kwargs):
         t = Table.read(fn, format=format)
 
         if verbose:
@@ -156,10 +162,10 @@ class InterpolatedWind(RPWind):
         vels = np.array([t[key] for key in vel_keys])
         v_tot = np.sqrt(np.sum(vels**2, axis=0)) * v_format
         
-        self.interp = interp1d(ts, v_tot, bounds_error=False, fill_value='extrapolate')
+        interp = interp1d(ts, v_tot, bounds_error=False, fill_value='extrapolate')
 
-    def from_xy(self, xs, ys):
-        self.interp = interp1d(xs, ys, bounds_error=False, fill_value='extrapolate')
+        return InterpolatedWind(interp=interp, **kwargs)
+
 
 
 class Density:
