@@ -1,6 +1,7 @@
 
 
 class InitConditions:
+    """ Container for a satellite's initial conditions."""
     def __init__(self, pos=None, vel=None):
         self.pos = pos
         self.vel = vel
