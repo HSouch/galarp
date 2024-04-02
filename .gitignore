@@ -8,6 +8,9 @@ galarp.egg-info
 dist
 notebooks
 
+*.py[cod]
+__pycache__/
+
 galarp/__pycache__
 galarp/tests/__pycache__
 galarp/hosts/__pycache__
