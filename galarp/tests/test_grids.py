@@ -14,3 +14,14 @@ class TestUniformGrid(ParticleGridTestBase):
     mass_profile = gen_mass_profile(example_potential)
 
     grid.generate(mass_profile, velocities=True)
+
+
+class TestExpontentialGrid(ParticleGridTestBase):
+    name = "ExponentialGrid"
+    grid = pgrids.ExponentialGrid(n_particles=200)
+    
+
+    example_potential = JZ2023_Satellite()
+    mass_profile = gen_mass_profile(example_potential)
+
+    grid.generate(mass_profile)
