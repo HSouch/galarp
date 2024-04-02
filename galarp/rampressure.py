@@ -6,8 +6,6 @@ import pickle
 import astropy.units as u
 import numpy as np
 
-from tqdm import tqdm
-
 from .postprocessing import utils
 
 # This module
@@ -160,13 +158,6 @@ class RPSim:
             func_units=galactic,
             progress=not debug,
         )
-
-        if debug:
-            for p in tqdm(particles):
-                orbit = integrator.run(
-                    gd.combine(particles.container), dt=dt, t1=0, t2=integration_time
-                )
-            return
 
         orbits = integrator.run(
             gd.combine(particles.container), dt=dt, t1=0, t2=integration_time

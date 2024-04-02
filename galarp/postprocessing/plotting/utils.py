@@ -1,14 +1,7 @@
-import os
+
 import numpy as np
-import astropy.units as u
 
-
-from matplotlib import pyplot as plt
 import matplotlib as mpl
-
-
-
-from .. import utils
 
 __all__ = ["pyplot_style", "default_pyplot_style", "lavender_cmap"]
     

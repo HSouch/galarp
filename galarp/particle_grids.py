@@ -54,7 +54,6 @@ class ParticleGrid:
     def plot_grid(self, **kwargs):
         """ Plot the grid of particles in the xy and xz planes. """
         particle_size = kwargs.get("particle_size", 1)
-        max_particles = kwargs.get("max_particles", 1000)
 
         fig, ax = plt.subplots(1, 2, facecolor="white", figsize=(8, 4))
         xs, ys, zs = self.get_xyz()
