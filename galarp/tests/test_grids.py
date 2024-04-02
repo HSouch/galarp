@@ -1,5 +1,5 @@
 from .helpers import ParticleGridTestBase
-from ..particle_grids import *
+from .. import particle_grids as pgrids
 
 from ..builtins.satellites import JZ2023_Satellite
 from ..utils import gen_mass_profile
@@ -7,7 +7,7 @@ from ..utils import gen_mass_profile
 
 class TestUniformGrid(ParticleGridTestBase):
     name = "UniformGrid"
-    grid = UniformGrid(Rmax=10, n_particles=50, z_start=0.0, veldisp=10.0)
+    grid = pgrids.UniformGrid(Rmax=10, n_particles=50, z_start=0.0, veldisp=10.0)
     
 
     example_potential = JZ2023_Satellite()

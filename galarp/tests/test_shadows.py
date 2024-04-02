@@ -1,20 +1,20 @@
 import numpy as np
 
 from .helpers import ShadowTestBase
-from ..shadows import *
+from .. import shadows 
 
 class TestUniformShadow(ShadowTestBase):
-    shadow = UniformShadow()
+    shadow = shadows.UniformShadow()
     xyz = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])
     t = 0
 
 class TestExponentialShadow(ShadowTestBase):
-    shadow = ExponentialShadow()
+    shadow = shadows.ExponentialShadow()
     xyz = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])
     t = 0
 
 class TestEdgeOnShadow(ShadowTestBase):
-    shadow = EdgeOnShadow()
+    shadow = shadows.EdgeOnShadow()
     xyz = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])
     t = 0
     
