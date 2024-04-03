@@ -9,7 +9,7 @@ import numpy as np
 from .postprocessing import utils
 
 # This module
-from . import shadows, winds
+from . import shadows, winds, densities
 
 import gala.dynamics as gd
 from gala.units import galactic
@@ -105,7 +105,9 @@ class RPSim:
     ):
 
         if type(rho_icm) is u.Quantity:
-            self.rho_icm = winds.Density(rho_icm)
+            self.rho_icm = densities.Density(rho_icm)
+        else:
+            self.rho_icm = rho_icm
 
         # Allow for user to switch out wind in the run method
         if wind is not None:
