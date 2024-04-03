@@ -1,3 +1,13 @@
 Plotting Results
 ================
 
+``GalaRP`` has a wealth of plotting functions to plot all stages of the RP interaction, 
+from the initial infall conditions, to the RP simulation setup, to the particle grids,
+to the final orbits. 
+
+.. toctree::
+   :maxdepth: 1
+
+   genplots
+   matrixplots
+   aestheticplots
