@@ -17,6 +17,7 @@ extensions = ['sphinx.ext.napoleon',
               'sphinx.ext.mathjax',
               'sphinx.ext.autodoc',
               'sphinx.ext.doctest',
+              'sphinx.ext.intersphinx',
               'sphinx.ext.inheritance_diagram']
 
 templates_path = ['_templates']
