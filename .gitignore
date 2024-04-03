@@ -6,6 +6,7 @@
 galarp.egg-info/PKG-INFO
 galarp.egg-info
 
+docs/_build/latex
 
 dist
 notebooks
