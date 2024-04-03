@@ -1,6 +1,8 @@
 
 .VSCodeCounter
 
+*.DS_Store
+
 galarp.egg-info/PKG-INFO
 galarp.egg-info
 
