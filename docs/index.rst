@@ -17,14 +17,17 @@ GalaRP
 Ram pressure is a physical process that a galaxy experiences when it travels through a 
 gaseous medium, 
 such as the intergalactic medium or the intracluster medium. The gas is stripped from the galaxy, 
-which can lead to the formation of a tail of gas and stars. This process is known as ram 
-pressure stripping. 
+which can lead to the formation of a tail of gas and stars. This process is known as ram pressure stripping. 
+This process leads to the creation of "RPS Galaxies": some of the most visually striking objects in galaxy evolution.
 
-GalaRP leverages the `Gala python package <http://gala.adrian.pw/en/latest/>`_, combined with nonconservative orbit 
+``GalaRP`` leverages the `Gala python package <http://gala.adrian.pw/en/latest/>`_, combined with nonconservative orbit 
 integration,
 to simulate the larger-scale effects of ram pressure absent hydrodynamical instabilities. Its primary purpose is to 
 be an efficient tool for finding optimal setup conditions for hydrodynamical wind-tunnel simulations of ram pressure
 stripping.
+
+The central purpose of ``GalaRP`` is to simulate (to first order) the expected large-scale conditions of an RP 
+interaction from a hydrodynamical simulation. 
 
 Development is active on `Github <https://github.com/HSouch/galarp/>`_, and the Authors encourage
 updates and suggestions to improve and enhance its functionality.
