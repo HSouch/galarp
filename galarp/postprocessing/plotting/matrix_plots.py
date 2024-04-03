@@ -7,6 +7,7 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 
 class MatrixPlot:
+    """ Base class to create matrix plots. """
     def __init__(self, **kwargs):
         self.cmap = kwargs.get("cmap", "viridis")
         self.figsize = kwargs.get("figsize", (10, 10))
@@ -41,7 +42,23 @@ class MatrixPlot:
     
 
 
-def density_xy_matrix(orbits, x_ind=0, y_ind=1, nrows=4, ncols=4, outname=None, **kwargs):
+def density_matrix(orbits, x_ind=0, y_ind=1, nrows=4, ncols=4, outname=None, **kwargs):
+    """ Create a matrix plot of the density of the orbits for a given principle axis.
+
+    Args:
+        orbits (OrbitContainer): The orbits to plot.
+        x_ind (int, optional): The x-axis index. Defaults to 0.
+        y_ind (int, optional): The y-axis index. Defaults to 1.
+        nrows (int, optional): The number of rows in the matrix. Defaults to 4.
+        ncols (int, optional): The number of columns in the matrix. Defaults to 4.
+        outname (str, optional): The name of the output file. Defaults to None.
+    
+    Usage:
+        ```
+        density_matrix(orbits, x_ind=0, y_ind=1, nrows=4, ncols=4, outname="test_out.pdf", **kwargs)
+        ```
+    """
+    
     times = kwargs.get("times", np.linspace(0, len(orbits.data.t) - 1, nrows * ncols).astype(int))
     xextent = kwargs.get("xextent", (-40., 40.))
     xextent = (-xextent, xextent) if isinstance(xextent, (int, float)) else xextent
