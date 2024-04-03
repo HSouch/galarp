@@ -22,7 +22,7 @@ import gala.integrate as gi
 __all__ = ["F_RPS_constant_wind", "RPSim", "OrbitContainer"]
 
 
-def F_RPS_constant_wind(
+def F_RPS(
     t, w, potential, shadow, wind, rho, r_cloud, m_cloud, wind_on=True, debug=False
 ):
     # position units are in kpc
@@ -64,7 +64,7 @@ class RPSim:
         rho_icm=None,
         shadow=None,
         potential_name="",
-        method=F_RPS_constant_wind,
+        method=F_RPS,
     ):
         self.method = method
 
@@ -114,32 +114,17 @@ class RPSim:
         if printout:
             printout_width = 80
             print("".center(printout_width, "-"))
-            print(
-                f" Running GALA sim with  {self.wind.wind_strength():.2e}  wind at  {self.wind.inclination():.2f}  degrees ".center(
-                    printout_width, "-"
-                )
-            )
-            print(
-                f" Running for {integration_time}  at a timestep of  {dt}  ({integration_time / dt:.1f} steps) ".center(
-                    printout_width, "-"
-                )
-            )
+            print(f" Running GALA sim with  {self.wind.wind_strength():.2e}  wind at  {self.wind.inclination():.2f}  degrees ".center(
+                    printout_width, "-"))
+            print(f" Running for {integration_time}  at a timestep of  {dt}  ({integration_time / dt:.1f} steps) ".center(
+                    printout_width, "-"))
             print("".center(printout_width, "-"))
-            print(
-                f" Container contains {len(particles.container)} particles ".center(
-                    printout_width, "-"
-                )
-            )
-            print(
-                f" Each cloud has a mass of  {m_cloud.value:.1e} solar masses  and a radius of  {r_cloud:.2f}   ".center(
-                    printout_width, "-"
-                )
-            )
-            print(
-                f" This corresponds to a density of {(m_cloud / r_cloud **3).to(u.g/u.cm**3):.2e}   ".center(
-                    printout_width, "-"
-                )
-            )
+            print(f" Container contains {len(particles.container)} particles ".center(
+                    printout_width, "-"))
+            print(f" Each cloud has a mass of  {m_cloud.value:.1e} solar masses  and a radius of  {r_cloud:.2f}   ".center(
+                    printout_width, "-"))
+            print(f" This corresponds to a density of {(m_cloud / r_cloud **3).to(u.g/u.cm**3):.2e}   ".center(
+                    printout_width, "-"))
             print("".center(printout_width, "-"))
 
         # potential, shadow, wind_vec, rho, r_cloud, m_cloud, damping=1, wind_on=True)
