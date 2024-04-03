@@ -19,7 +19,7 @@ from gala.units import galactic
 import gala.integrate as gi
 
 
-__all__ = ["F_RPS_constant_wind", "RPSim", "OrbitContainer"]
+__all__ = ["F_RPS", "RPSim", "OrbitContainer"]
 
 
 def F_RPS(
