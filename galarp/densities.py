@@ -17,6 +17,9 @@ class Density:
 
     def evaluate(self, t):
         return self.rho.to(u.g / u.cm**3)
+    
+    def evaluate_arr(self, ts):
+        return np.array([self.evaluate(t).value for t in ts])
 
 
 class ExponentialDensity(Density):
