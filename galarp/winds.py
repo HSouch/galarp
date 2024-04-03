@@ -28,7 +28,7 @@ class RPWind:
         ```
     """
 
-    def __init__(self, vector=None, units=None):
+    def __init__(self, vector=None, units=None, **kwargs):
         """
         Args:
             vector (astropy Quantity, optional): Wind vector. Can also be initialized using self.init_from_inc(). Defaults to None.
@@ -48,6 +48,9 @@ class RPWind:
     def evaluate(self, t):
         """Return the wind vector at time t. For the default wind vector, this is JUST the vector converted to kpc/Myr"""
         return self.vector.to(u.kpc / u.Myr).value
+    
+    def evaluate_arr(self, ts):
+        return np.array([self.evaluate(t) for t in ts])
 
     def initialize_vector(self):
         if self.units is not None:
