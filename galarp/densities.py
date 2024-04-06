@@ -1,6 +1,9 @@
 from astropy import units as u
 import numpy as np
 
+from astropy.table import Table
+from scipy.interpolate import interp1d
+
 
 __all__ = [
     "Density",
@@ -23,6 +26,7 @@ class Density:
 
 
 class ExponentialDensity(Density):
+    """Class to represent an exponential density profile."""
     def __init__(self, rho, t0, width):
         super().__init__(rho)
         self.t0 = t0
@@ -36,17 +40,42 @@ class ExponentialDensity(Density):
 
 
 class InterpolatedDensity(Density):
-    """Density class that returns an interpolated value for the density at a given time t.
-    Helpful for if you are determining the density through a GALA orbit and want it to be as realistic
-    as possible.
-    """
-
-    def __init__(self, interp):
-        super().__init__(
-            0
-        )  # The "rho" can just be 0 here, as it will be overwritten by the interpolation
-
+    """Class to represent an interpolated density profile."""
+    def __init__(self, interp=None, units=u.g/u.cm**3, **kwargs):
+        super().__init__(rho=0 * u.g/u.cm**3, **kwargs)
         self.interp = interp
 
     def evaluate(self, t):
-        return self.interp(t)
+        """ Return the density at time t. """
+        return self.interp(t) * u.g /u.cm **3
+
+    @staticmethod
+    def from_table(fn, t_key, rho_key,
+                    t_units=u.s, rho_units=u.g/u.cm**3,
+                    format="ascii", **kwargs):
+        """
+        Create an InterpolatedDensity object from a table.
+
+        Parameters:
+        fn (str): The filename of the table.
+        t_key (str): The column name for the time values.
+        rho_key (str): The column name for the density values.
+        t_units (astropy.units.Unit, optional): The units for the time values. 
+            Default is seconds (u.s).
+        rho_units (astropy.units.Unit, optional): The units for the density values. 
+            Default is grams per cubic centimeter (u.g/u.cm**3).
+        format (str, optional): The format of the table. Default is "ascii".
+        **kwargs: Additional keyword arguments to be passed to the InterpolatedDensity constructor.
+
+        Returns:
+        InterpolatedDensity: An InterpolatedDensity object created from the table.
+        """
+        t = Table.read(fn, format=format)
+
+        ts = t[t_key] * t_units.to(u.Myr)
+
+        rho = t[rho_key] * rho_units
+
+        interp = interp1d(ts, rho, bounds_error=False, fill_value="extrapolate")
+
+        return InterpolatedDensity(interp=interp, **kwargs)
