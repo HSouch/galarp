@@ -6,7 +6,8 @@ GalaRP (`Gala <http://gala.adrian.pw/en/latest/>`_ + RP) is an analytical framew
 
 .. |logo| image:: https://hsouch.github.io//images/Galarp-Logo.png
 
-![Static Badge](https://img.shields.io/badge/MIT-green?label=License&labelColor=Grey)
+.. image:: https://img.shields.io/badge/MIT-green?label=License&labelColor=Grey
+   :alt: Static Badge
 .. image:: https://readthedocs.org/projects/galarp/badge/?version=latest
     :target: https://galarp.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
