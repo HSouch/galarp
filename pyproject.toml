@@ -10,4 +10,26 @@ exclude = [
 
 ignore = ["F403"]
 
-line-length=88
+line-length = 88
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry]
+name = "GalaRP"
+version = "0.0.4"
+description = "Gala potential integration with integrated ram pressure and other nonconservative forces"
+authors = ["Harrison Souchereau <harrison.souchereau@yale.edu>"]
+
+
+[tool.poetry.dependencies]
+python = "^3.6"
+astropy = "6.0.0"
+gala = "1.8.1"
+k3d = "2.16.1"
+matplotlib = "3.8.3"
+numpy = "1.26.4"
+scipy = "1.13.0"
+tqdm = "4.66.1"
