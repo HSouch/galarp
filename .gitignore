@@ -24,3 +24,5 @@ galarp/postprocessing/plotting/__pycache__
 
 paper/figures
 paper/temp
+
+.tox
