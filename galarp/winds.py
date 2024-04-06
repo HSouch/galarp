@@ -4,6 +4,8 @@ import astropy.units as u
 from astropy.units import Quantity
 import numpy as np
 
+from gala.units import galactic
+
 from scipy.interpolate import interp1d
 
 
@@ -124,44 +126,63 @@ class StepFunctionWind(RPWind):
     
 
 class InterpolatedWind(RPWind):
-    """ Wind class that returns an interpolated value for the wind vector at a given time t based on a scipy 
-        interp1D object.
+    """Wind that is interpolated from a table of values. """
 
-    """
-    def __init__(self, interp=None, inc=np.deg2rad(90), **kwargs):
+    def __init__(self, interp=None, units=galactic, **kwargs):
+        """
+            Args:
+                interp (callable): Interpolation function that takes a time value as input and returns the wind velocity at that time.
+                units (dict, optional): Dictionary specifying the units of the wind vector. Defaults to galactic units.
+                inc (float, optional): Inclination angle of the wind vector in radians. Defaults to 0.
+            """
         super().__init__(**kwargs)
-        self.inc = inc
-        self.vector = kwargs.get('vector', u.Quantity([np.cos(inc), 0, np.sin(inc)]) * u.km/u.s)
-
         self.interp = interp
+        self.inc = kwargs.get("inc", 0)
 
-        self.unit_vector = self.vector / np.linalg.norm(self.vector)
-        print(self.unit_vector)
-
-
-    def evaluate(self, t):
-        return self.unit_vector * self.interp(t)
+        self.unit_vector = [np.cos(self.inc), 0, np.sin(self.inc)]
     
-
-    def from_xy(self, xs, ys):
-        self.interp = interp1d(xs, ys, bounds_error=False, fill_value='extrapolate')
+    def evaluate(self, t):
+        """ Evaluate the wind vector at a given time by multiplying the unit vector by the interpolated
+            wind strength at that time.
+        """
+        return self.unit_vector * self.interp(t)
 
     @staticmethod
-    def from_table(fn, time_key, vel_keys, format='ascii', verbose=False, v_format=u.cm/u.s, ts_format=u.s, 
-                   **kwargs):
+    def from_table(fn, t_key, vel_keys, format="ascii",
+                   t_units = u.s, v_units = u.cm / u.s, 
+                   verbose=False, **kwargs):
+        """
+        Create an InterpolatedWind object from a table.
+
+        Parameters:
+        - fn (str): The filename of the table.
+        - t_key (str): The key for the time column in the table.
+        - vel_keys (str or list): The key(s) for the velocity column(s) in the table.
+        - format (str, optional): The format of the table. Default is "ascii".
+        - t_units (astropy.units.Unit, optional): The units for the time column. Default is u.s.
+        - v_units (astropy.units.Unit, optional): The units for the velocity column(s). Default is u.cm / u.s.
+        - verbose (bool, optional): Whether to print verbose output. Default is False.
+        - **kwargs: Additional keyword arguments to be passed to the InterpolatedWind constructor.
+
+        Returns:
+        - InterpolatedWind: An InterpolatedWind object created from the table.
+        Usage:
+                >>> wind = InterpolatedWind.from_table("wind_data.txt", "time", 
+                    ["velocity_x", "velocity_y", "velocity_z"], units=galactic, inc=np.deg2rad(45))
+                >>> print(wind.evaluate(10 * u.Myr))
+        """
         t = Table.read(fn, format=format)
 
         if verbose:
-            print(f'Loaded Table with {len(t)} rows, and keys: {t.keys()}')
+            print(f'Loaded table with {len(t)} rows and keys: {t.keys()}')
 
-        ts = t[time_key] * ts_format.to(u.Myr)
+        ts = t[t_key] * t_units.to(u.Myr)
 
-        if not isinstance(vel_keys, list): 
-            vel_keys = [vel_keys]
+        if not isinstance(vel_keys, list): vel_keys = [vel_keys]
 
         vels = np.array([t[key] for key in vel_keys])
-        v_tot = np.sqrt(np.sum(vels**2, axis=0)) * v_format
-        
-        interp = interp1d(ts, v_tot, bounds_error=False, fill_value='extrapolate')
+        v_tot = np.sqrt(np.sum(vels**2, axis=0)) * v_units.to(u.kpc/u.Myr)
+
+        interp = interp1d(ts, v_tot, bounds_error=False, fill_value="extrapolate")
 
         return InterpolatedWind(interp=interp, **kwargs)
