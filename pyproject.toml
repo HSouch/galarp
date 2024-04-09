@@ -1,3 +1,38 @@
+[project]
+name = "galarp"
+authors = [
+    {name = "Harrison Souchereau", email = "hsouchereau@outlook.com"},
+]
+description = "Ram pressure interactions in Gala"
+readme = "README.rst"
+requires-python = ">=3.9"
+keywords = ["astronomy", "dynamics"]
+license = {file = "LICENSE"}
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Topic :: Scientific/Engineering :: Astronomy"
+]
+dependencies = [
+    "numpy>=1.20",
+    "scipy>=1.8",
+    "astropy>=5.0",
+    "gala >=1.8"
+]
+dynamic = ["version"]
+
+[project.urls]
+Documentation = "https://galarp.readthedocs.io/en/latest/"
+Repository = "https://github.com/HSouch/galarp/"
+
+
+[project.optional-dependencies]
+shared = [
+    "matplotlib",
+    "tqdm",
+]
+
 
 [tool.ruff]
 exclude = [
@@ -13,23 +48,10 @@ ignore = ["F403"]
 line-length = 88
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
-
-
-[tool.poetry]
-name = "GalaRP"
-version = "0.0.4"
-description = "Gala potential integration with integrated ram pressure and other nonconservative forces"
-authors = ["Harrison Souchereau <harrison.souchereau@yale.edu>"]
-
-
-[tool.poetry.dependencies]
-python = "^3.6"
-astropy = "6.0.0"
-gala = "1.8.1"
-k3d = "2.16.1"
-matplotlib = "3.8.3"
-numpy = "1.26.4"
-scipy = "1.13.0"
-tqdm = "4.66.1"
+requires = [
+    "setuptools>=42",
+    "wheel",
+    "setuptools_scm",
+    "oldest-supported-numpy",
+]
+build-backend = "setuptools.build_meta"
