@@ -31,6 +31,24 @@ def ellipse_coords(x, y, a, b, theta, num_points=100, b_is_ellipticity=False):
     return x_coords, y_coords, z_coords
 
 
+def ellipse_coords_3D(t, a, b, phi, theta):
+    """
+    Evaluate the coordinates of an ellipse at local angles [t], rotated by phi and theta in spherical coordinates.
+
+    Args:
+        t (float or array-like): Local angles at which to evaluate the ellipse.
+        a (float): Semi-major axis of the ellipse.
+        b (float): Semi-minor axis of the ellipse.
+        phi (float): Rotation angle around the z-axis.
+        theta (float): Rotation angle around the x-axis.
+    """
+    x = a * np.cos(t) * np.cos(phi) - b * np.sin(t) * np.sin(phi)
+    y = a * np.cos(t) * np.sin(phi) + b * np.sin(t) * np.cos(phi)
+    z = a * np.sin(t) * np.sin(theta)
+    
+    return x, y, z
+
+
 def normalize_vector(vec):
     return vec / np.sqrt(np.sum(vec**2))
 
