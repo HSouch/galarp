@@ -26,9 +26,21 @@ To install the current development version:
     python -m pip install git+https://github.com/HSouch/galarp
 
 
-Gala and gsl
+Gala and GSL
 ------------
 
-Gala requires the Gnu Scientific Library (GSL) to have full functionality. 
-It is recommended to install gala first, and ensure GSL is running properly.
-Please refer to  `Gala's Installation Page <https://gala.adrian.pw/en/latest/install.html>`_
+``gala`` requires the Gnu Scientific Library (GSL) to have full functionality. 
+It is recommended to install gala first, and ensure GSL is running properly before trying to
+install ``galarp``.
+
+Please refer to  `Gala's Installation Page <https://gala.adrian.pw/en/latest/install.html>`_.
+
+To check that gsl is working, run the following in your virtual environment:
+
+.. code-block:: python
+
+    import gala
+    import gala.potential as gp
+
+The second import statement directly calls GSL, so if it runs without any errors, everything
+has been installed correctly on the ``gala`` side.
