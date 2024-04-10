@@ -131,6 +131,13 @@
   <ul class="bd-navbar-elements navbar-nav">
     
                     <li class="nav-item">
+                      <a class="nav-link nav-internal" href="installation.html">
+                        Installation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
                       <a class="nav-link nav-internal" href="getting_started.html">
                         Getting Started with GalaRP
                       </a>
@@ -232,6 +239,13 @@ document.write(`
 <nav class="navbar-nav">
   <ul class="bd-navbar-elements navbar-nav">
     
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="installation.html">
+                        Installation
+                      </a>
+                    </li>
+                
+
                     <li class="nav-item">
                       <a class="nav-link nav-internal" href="getting_started.html">
                         Getting Started with GalaRP
@@ -370,6 +384,16 @@ document.write(`
 <p><code class="docutils literal notranslate"><span class="pre">GalaRP</span></code> has a wealth of plotting functions to plot all stages of the RP interaction,
 from the initial infall conditions, to the RP simulation setup, to the particle grids,
 to the final orbits.</p>
+<p><code class="docutils literal notranslate"><span class="pre">GalaRP</span></code> has a default pyplot style which you can load as follows:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">galarp</span> <span class="k">as</span> <span class="nn">grp</span>
+<span class="n">grp</span><span class="o">.</span><span class="n">pyplot_style</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>You can also load in the colormap used for some of these figures with the following:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">cmap</span> <span class="o">=</span> <span class="n">grp</span><span class="o">.</span><span class="n">lavender_cmap</span><span class="p">(</span><span class="n">step_1</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>which can be tuned to your liking by adjusting the <code class="docutils literal notranslate"><span class="pre">step_1</span></code> parameter.</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="genplots.html">General Plotting Routines <code class="docutils literal notranslate"><span class="pre">plotting.genplots</span></code></a></li>

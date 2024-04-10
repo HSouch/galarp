@@ -1,5 +1,5 @@
 Matrix Plots ``plotting.matrixplots`` 
-=========================================
+=====================================
 
 Density Plots
 -------------
@@ -21,9 +21,10 @@ snapshots of a hydrodynamical simulation.
 This will plot the x-y plane by default. You can adjust the x-axis and y-axis plot by changing ``x_ind`` and ``y_ind``, 
 where the index of what is plotted corresponds to the output of ``grp.get_orbit_data(orbits)``, where they are
 organized as :math:`(x,y,z,v_x,v_y,v_z)`. Thus, to plot the :math:`x-z` plane, you would set ``y_ind=2``, and to
-plot the 
+plot the :math:`z-v_z` phase space, you would set ``x_ind=2`` and ``y_ind=5``.
 
 .. raw:: html
 
    <img src="_static/plots/density_xy_matrix.png" width="45%%"  style="margin-bottom: 32px;"/>
    <img src="_static/plots/density_zvz_matrix.png" width="45%%"  style="margin-bottom: 32px;"/>
+

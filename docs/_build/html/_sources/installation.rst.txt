@@ -1,0 +1,13 @@
+Installation
+============
+
+
+Stable Version
+--------------
+
+
+Development
+-----------
+
+Development is active on `Github <https://github.com/HSouch/galarp/>`_, and the Authors encourage
+updates and suggestions to improve and enhance its functionality.

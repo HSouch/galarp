@@ -35,6 +35,7 @@ updates and suggestions to improve and enhance its functionality.
 .. toctree::
    :maxdepth: 1
 
+   installation
    getting_started
 
 
