@@ -2,12 +2,22 @@ from astropy import units as u
 import numpy as np
 import os
 
+from .. import analysis
 from .. import utils            # TODO This is horrible, but it works for now. Refactor the top-level utils file.
+from ...utils import get_orbit_data, rotate
 
 from matplotlib import pyplot as plt
+from scipy.interpolate import interp1d
 
 
-__all__ = ["get_orbit_data", "k3d_plot", "plot_orbits", "plot_density", "plot_density_3ax"]
+__all__ = [
+    "get_orbit_data",
+    "k3d_plot",
+    "plot_orbits",
+    "plot_density",
+    "plot_density_3ax",
+    "pyplot_3D_plot",
+]
 
 def get_orbit_data(o):
     pos, vel = o.pos, o.vel
@@ -238,5 +248,94 @@ def plot_density_3ax(xyz, gridsize=40, outname=None, **kwargs):
     
     if outname is not None:
         plt.savefig(outname)
+    else:
+        plt.show()
+
+
+def pyplot_3D_plot(orbits, nrows=2, ncols=3, **kwargs):
+    """ Plots a set of 3D scatter plots of the particle positions in a given OrbitContainer.
+
+    Args:
+        orbits (OrbitData): The orbit data to be plotted.
+        nrows (int, optional): Number of rows in the subplot grid. Defaults to 2.
+        ncols (int, optional): Number of columns in the subplot grid. Defaults to 3.
+        **kwargs: Additional keyword arguments for customization.
+
+    Keyword Args:
+        figsize (tuple, optional): Figure size in inches. Defaults to (ncols * 2, nrows * 2).
+        outname (str, optional): Output file name for saving the plot. Defaults to None.
+        dpi (int, optional): Dots per inch for the saved figure. Defaults to 100.
+        tmin (int, optional): Minimum time index to plot. Defaults to 0.
+        tmax (int, optional): Maximum time index to plot. Defaults to x.shape[1].
+        cmap (matplotlib colormap, optional): Colormap for the scatter plot. Defaults to plt.cm.viridis.
+        rmax (float, optional): Maximum value for the x and y axes limits. Defaults to 50.
+        zmin (float, optional): Minimum value for the z axis limit. Defaults to -10.
+        zmax (float, optional): Maximum value for the z axis limit. Defaults to 50.
+
+    Returns:
+        None
+    """
+
+    figsize = kwargs.get("figsize", (ncols * 2, nrows * 2))
+    outname = kwargs.get("outname", None)
+    dpi = kwargs.get("dpi", 100)
+
+    times, rstrips = analysis.rstrip(orbits, r_strip_frac=0.8)
+
+    interp = interp1d(times, rstrips, bounds_error=False, fill_value="extrapolate")
+
+    ts = orbits.data.t
+
+    x, y, z, vx, vy, vz = get_orbit_data(orbits.data)
+
+    tmin = kwargs.get("tmin", 0)
+    tmax = kwargs.get("tmax", x.shape[1])
+    cmap = kwargs.get("cmap", plt.cm.viridis)
+    rmax = kwargs.get("rmax", 50)
+    zmin = kwargs.get("zmin", -10)
+    zmax = kwargs.get("zmax", 50)
+
+    dt = int((tmax - tmin) / (nrows * ncols))
+
+    fig = plt.figure(figsize=figsize, edgecolor="black", linewidth=2)
+
+    ax = []
+
+    for index in range(nrows * ncols):
+        ax.append(fig.add_subplot(nrows, ncols, index + 1, projection="3d"))
+
+    for i, axis in enumerate(ax):
+        t = tmin + i * dt
+        
+        mappable = axis.scatter(x[::10,t], y[::10,t], z[::10,t], c=vz[::10,t], cmap=cmap, s=1, vmin=-100, vmax=100)
+
+        rstrip = interp(ts[t])
+        ell1 = utils.ellipse_coords_3D(np.linspace(0, 2 * np.pi, 100), rstrip * 2,  rstrip * 2, 0, 0)
+        ell2 = rotate(ell1, 0, np.pi / 2, 0)
+        ell3 = rotate(ell1, 0, np.pi/2, np.pi / 2)
+        
+        for ellipse in [ell1, ell2, ell3]:
+            axis.plot(*ellipse, c="black", lw=0.5, zorder=3, alpha=0.5)
+
+        #ax[axis].plot(x[:,t1:t2], y[:,t1:t2], z[:,t1:t2], c=z[:,t1:t2], cmap=cmap, s=1)
+        axis.set_title(f"t = {ts[t]} Myr", fontsize=8)
+
+        for naxis in [axis.xaxis, axis.yaxis, axis.zaxis]:
+            naxis.set_tick_params(labelsize=8)
+
+        axis.set_xlim(-rmax, rmax)
+        axis.set_ylim(-rmax, rmax)
+        axis.set_zlim(zmin, zmax)
+        axis.view_init(elev=10, azim=30)
+
+
+    cbar_ax = fig.add_axes([0.85, 0.15, 0.08, 0.008])
+    cbar = plt.colorbar(mappable=mappable, ax=cbar_ax, cax=cbar_ax, orientation="horizontal")  
+    cbar.set_label(label=r'$v_z$ [km s$^{-1}$]', fontsize=8, labelpad=1)
+    cbar.ax.tick_params(labelsize=8, pad=1)
+    plt.tight_layout()
+    
+    if outname is not None:
+        plt.savefig(outname, dpi=dpi, edgecolor=fig.get_edgecolor())
     else:
         plt.show()
