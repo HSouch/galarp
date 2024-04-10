@@ -205,8 +205,7 @@ def save_orbits(orbits, name="auto", outdir=""):
 
 
 class OrbitContainer:
-    """ Container for storing orbits and metadata from a completed GalaRP run.
-    """
+    """ Container for storing orbits and metadata from a completed GalaRP run. """
     def __init__(self, data, units=None, metadata={}):
         self.data = data
         self.units = units
@@ -221,3 +220,14 @@ class OrbitContainer:
             utils.plot_orbits(
                 self.data, wind=self.metadata["WIND"], shadow=self.metadata["SHADOW"]
             )
+
+    def save(self, fn):
+        """ Pickle the OrbitContainer. """
+        with open(fn, "wb") as f:
+            pickle.dump(self, f)
+
+    @staticmethod
+    def load(fn):
+        """ Load a pickled OrbitContainer. """
+        with open(fn, "rb") as f:
+            return pickle.load(f)
