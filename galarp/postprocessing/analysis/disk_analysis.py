@@ -9,6 +9,21 @@ from astropy import units as u
 from astropy.modeling import models, fitting
 
 
+def calculate_rstrip(xyz, rmax=20, zmax=2, frac=0.8):
+    x,y,z = xyz
+    r = np.sqrt(x**2 + y**2 + z**2)
+    this_r_cut = r[np.abs(z) < zmax]
+    this_r_cut = this_r_cut[this_r_cut < rmax]
+    
+    try:
+        cdf = stats.ecdf(this_r_cut)
+        cdf_xs, cdf_vals = cdf.cdf.quantiles, cdf.cdf.probabilities
+        return cdf_xs[np.argmin(np.abs(cdf_vals - frac))]
+    except:
+        return 0
+
+
+
 def rstrip(orbits, zmax=2 * u.kpc, r_strip_frac=0.8, rmax=20 * u.kpc):
     """
     Calculate the evolution of the stripping radius for a given OrbitContainer.
@@ -41,17 +56,8 @@ def rstrip(orbits, zmax=2 * u.kpc, r_strip_frac=0.8, rmax=20 * u.kpc):
     
     strip_times, rstrips = [], []
     for i in range(0, len(r), 5):
-        this_r, this_z = r[i], z[i]
-        this_r_cut = this_r[np.abs(this_z) < zmax.value]
-        this_r_cut = this_r_cut[this_r_cut < rmax.value]
-        
-        cdf = stats.ecdf(this_r_cut)
-        cdf_xs, cdf_vals = cdf.cdf.quantiles, cdf.cdf.probabilities
-        
-        closest = np.argmin(np.abs(cdf_vals - r_strip_frac)) 
         strip_times.append(times[i].value)
-        rstrips.append(cdf_xs[closest])
-
+        rstrips.append(calculate_rstrip((x[i], y[i], z[i]), rmax=rmax.value, zmax=zmax.value, frac=r_strip_frac))
     return strip_times, rstrips
 
 
