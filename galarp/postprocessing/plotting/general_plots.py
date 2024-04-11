@@ -279,6 +279,7 @@ def pyplot_3D_plot(orbits, nrows=2, ncols=3, **kwargs):
     figsize = kwargs.get("figsize", (ncols * 2, nrows * 2))
     outname = kwargs.get("outname", None)
     dpi = kwargs.get("dpi", 100)
+    cbar_ax_size = kwargs.get("cbar_ax", [0.85, 0.15, 0.08, 0.008])
 
     times, rstrips = analysis.rstrip(orbits, r_strip_frac=0.8)
 
@@ -329,7 +330,7 @@ def pyplot_3D_plot(orbits, nrows=2, ncols=3, **kwargs):
         axis.view_init(elev=10, azim=30)
 
 
-    cbar_ax = fig.add_axes([0.85, 0.15, 0.08, 0.008])
+    cbar_ax = fig.add_axes(cbar_ax_size)
     cbar = plt.colorbar(mappable=mappable, ax=cbar_ax, cax=cbar_ax, orientation="horizontal")  
     cbar.set_label(label=r'$v_z$ [km s$^{-1}$]', fontsize=8, labelpad=1)
     cbar.ax.tick_params(labelsize=8, pad=1)
