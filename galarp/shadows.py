@@ -4,6 +4,8 @@ from matplotlib import pyplot as plt
 
 from . import utils
 
+from .postprocessing import analysis
+
 __all__ = ["ShadowBase", "UniformShadow", "ExponentialShadow", "EdgeOnShadow"]
 
 
@@ -27,10 +29,14 @@ class ShadowBase:
     - __repr__(): Returns a string representation of the shadow object.
     """
 
-    def __init__(self, damping=0.5, R_disk=10 * u.kpc, shadow_name="ShadowBase"):
+    def __init__(self, damping=0.5, R_disk=10, shadow_name="ShadowBase", **kwargs):
         self.damping = damping
+        if isinstance(R_disk, u.Quantity):
+            R_disk = R_disk.to(u.kpc).value
         self.R_disk = R_disk
         self.shadow_name = shadow_name
+
+        self.dynamic_shadow = kwargs.get("dynamic", False)
 
     def evaluate(self, xyz, t):
         """
@@ -149,20 +155,33 @@ class UniformShadow(ShadowBase):
         phi (float, optional): The angle in radians. Defaults to 20 degrees.
     """
 
-    def __init__(
-        self, damping=0.5, R_disk=10 * u.kpc, zmin=0 * u.kpc, phi=np.deg2rad(20)
-    ):
-        super().__init__(damping=damping, R_disk=R_disk, shadow_name="Uniform")
-        self.zmin, self.phi = zmin, phi
+    def __init__(self, damping=0.5, R_disk=10, zmin=0.5, phi=np.deg2rad(20), **kwargs ):
+        super().__init__(damping=damping, R_disk=R_disk, shadow_name="Uniform", **kwargs)
+        if isinstance(zmin, u.Quantity):
+            zmin = zmin.to(u.kpc).value
+        self.zmin = zmin
+        self.phi = phi
+
+        self.frac = kwargs.get("frac", 0.9)
+        self.Rmax = kwargs.get("Rmax", 20)
+        self.zmax = kwargs.get("zmax", 2)
+        self.debug = kwargs.get("debug", False)
+
+        self.Rdisks = []
 
     def evaluate(self, q, t):
         x, y, z = q.T
+
+        if self.dynamic_shadow:
+            self.R_disk = analysis.calculate_rstrip(q.T, frac=self.frac, rmax=self.Rmax, zmax=self.zmax)
+        if self.debug:
+            self.Rdisks.append(self.R_disk)
 
         cent = _shadow_tangent(z, self.phi)
         dist = np.sqrt((x - cent) ** 2 + y**2)
 
         out = np.ones(dist.shape)
-        in_disk = np.logical_and((z > self.zmin.value), (dist < self.R_disk.value))
+        in_disk = np.logical_and((z > self.zmin), (dist < self.R_disk))
         out[in_disk] = self.damping
         return out
 
