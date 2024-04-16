@@ -46,14 +46,16 @@ def m0(rho_d0):
     return 1e9 * (rho_d0 / 1.46e-24) ** (-7 / 2)
 
 
-def get_orbit_data(o):
+def get_orbit_data(o, transposed=True):
     pos, vel = o.pos, o.vel
 
     x, y, z = pos.xyz.value
-    x, y, z = x.T, y.T, z.T
+    if transposed:
+        x, y, z = x.T, y.T, z.T
 
     vx, vy, vz = vel.d_xyz.to(u.km / u.s).value
-    vx, vy, vz = vx.T, vy.T, vz.T
+    if transposed:
+        vx, vy, vz = vx.T, vy.T, vz.T
 
     return x, y, z, vx, vy, vz
 
