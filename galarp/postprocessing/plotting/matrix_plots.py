@@ -101,6 +101,8 @@ def density_matrix(orbits, x_ind=0, y_ind=1, nrows=4, ncols=4, outname=None, **k
         dx, dy = xmax - xmin, ymax - ymin
         
         ax[i, j].text(xmin + dx/20, ymax - dy/10, f'{orbits.data.t[times[index]]}')
+        ax[i, j].text(xmin + dx/20, ymax - dy/5, f'({times[index]})')
+
         for hline in hlines:
             ax[i, j].axhline(hline, color="Grey", lw=1, zorder=1)
         for vline in vlines:
