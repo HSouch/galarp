@@ -30,7 +30,9 @@ The central purpose of ``GalaRP`` is to simulate (to first order) the expected l
 interaction from a hydrodynamical simulation. 
 
 Development is active on `Github <https://github.com/HSouch/galarp/>`_, and the Authors encourage
-updates and suggestions to improve and enhance its functionality.
+updates and suggestions to improve and enhance its functionality. Furthermore, some videos showing what ``GalaRP`` can 
+do are available (and can be used in presentations with credit given) on 
+`Youtube <https://www.youtube.com/@GalaRPS>`_.
 
 .. toctree::
    :maxdepth: 1

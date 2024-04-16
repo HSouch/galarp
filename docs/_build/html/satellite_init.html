@@ -1,12 +1,13 @@
 
+
 <!DOCTYPE html>
 
 
-<html lang="en" data-content_root="./" >
+<html lang="en" data-content_root="" >
 
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
     <title>Initializing the Satellite Galaxy &#8212; GalaRP  documentation</title>
   
@@ -28,21 +29,24 @@
 <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.1/webfonts/fa-brands-400.woff2" />
 <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
 
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
-    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=eafc0fe6" />
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
   <script src="_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
 
-    <script src="_static/documentation_options.js?v=5929fcd5"></script>
-    <script src="_static/doctools.js?v=888ff710"></script>
-    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'satellite_init';</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Ram Pressure Shadowing" href="shadows.html" />
+    <link rel="next" title="Ram Pressure Shadowing shadows" href="shadows.html" />
     <link rel="prev" title="Determining the Ram Pressure Profile" href="rp_profile.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -130,6 +134,13 @@
 <nav class="navbar-nav">
   <ul class="bd-navbar-elements navbar-nav">
     
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="installation.html">
+                        Installation
+                      </a>
+                    </li>
+                
+
                     <li class="nav-item">
                       <a class="nav-link nav-internal" href="getting_started.html">
                         Getting Started with GalaRP
@@ -233,6 +244,13 @@ document.write(`
   <ul class="bd-navbar-elements navbar-nav">
     
                     <li class="nav-item">
+                      <a class="nav-link nav-internal" href="installation.html">
+                        Installation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
                       <a class="nav-link nav-internal" href="getting_started.html">
                         Getting Started with GalaRP
                       </a>
@@ -303,7 +321,7 @@ document.write(`
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="rp_profile.html">Determining the Ram Pressure Profile</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Initializing the Satellite Galaxy</a></li>
-<li class="toctree-l1"><a class="reference internal" href="shadows.html">Ram Pressure Shadowing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shadows.html">Ram Pressure Shadowing <code class="docutils literal notranslate"><span class="pre">shadows</span></code></a></li>
 </ul>
 </div>
 </nav></div>
@@ -362,7 +380,34 @@ document.write(`
                 <article class="bd-article">
                   
   <section id="initializing-the-satellite-galaxy">
-<h1>Initializing the Satellite Galaxy<a class="headerlink" href="#initializing-the-satellite-galaxy" title="Link to this heading">#</a></h1>
+<h1>Initializing the Satellite Galaxy<a class="headerlink" href="#initializing-the-satellite-galaxy" title="Permalink to this heading">#</a></h1>
+<p>The satellite galaxy comprises two key components: the <strong>galaxy potential</strong> as well as the <strong>particle distribution</strong>
+which is actually what <code class="docutils literal notranslate"><span class="pre">GalaRP</span></code> uses to trace orbits.</p>
+<section id="the-satellite-galaxy-potential">
+<h2>The Satellite Galaxy Potential<a class="headerlink" href="#the-satellite-galaxy-potential" title="Permalink to this heading">#</a></h2>
+<p>The satellite galaxy potential can be any combination of <code class="docutils literal notranslate"><span class="pre">Gala</span></code> potentials. For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">gala.potential</span> <span class="k">as</span> <span class="nn">gp</span>
+
+<span class="n">dm</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">BurkertPotential</span><span class="p">(</span><span class="n">rho</span><span class="o">=</span><span class="mf">5.93e-25</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">g</span> <span class="o">/</span> <span class="n">u</span><span class="o">.</span><span class="n">cm</span><span class="o">**</span><span class="mi">3</span><span class="p">,</span> <span class="n">r0</span><span class="o">=</span><span class="mf">11.87</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">kpc</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">galactic</span><span class="p">)</span>
+
+<span class="n">stars</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">MiyamotoNagaiPotential</span><span class="p">(</span><span class="n">m</span><span class="o">=</span><span class="mi">10</span><span class="o">**</span><span class="mf">9.7</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Msun</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mf">2.5</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">kpc</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">kpc</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">galactic</span><span class="p">)</span>
+<span class="n">gas</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">MiyamotoNagaiPotential</span><span class="p">(</span><span class="n">m</span><span class="o">=</span><span class="mi">10</span><span class="o">**</span><span class="mf">9.7</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Msun</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mf">3.75</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">kpc</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mf">0.75</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">kpc</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">galactic</span><span class="p">)</span>
+
+<span class="n">pot</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">CompositePotential</span><span class="p">(</span><span class="n">dm</span><span class="o">=</span><span class="n">dm</span><span class="p">,</span> <span class="n">stars</span><span class="o">=</span><span class="n">stars</span><span class="p">,</span> <span class="n">gas</span><span class="o">=</span><span class="n">gas</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In this case we return an explicit composite potential, where you can access the components easily using <code class="docutils literal notranslate"><span class="pre">pot[&quot;dm&quot;]</span></code>,
+for example.</p>
+<p><code class="docutils literal notranslate"><span class="pre">GalaRP</span></code> also has built-in potentials under the <code class="docutils literal notranslate"><span class="pre">builtins.satellites</span></code> module.</p>
+</section>
+<section id="particle-initialization">
+<h2>Particle Initialization<a class="headerlink" href="#particle-initialization" title="Permalink to this heading">#</a></h2>
+<p>To run a <code class="docutils literal notranslate"><span class="pre">GalaRP</span></code> sim, the user needs to define some set of particles through which the RP orbits are calculated.
+The main particle classes included are a uniform grid of equally spaced particles, as well as a particle distribution
+matching the density distribtion of a double-exponential model:</p>
+<div class="math notranslate nohighlight">
+\[n(R,z) = n(0, 0)\exp\left(-\frac{R}{h_R}\right)\exp\left(-\frac{|z|}{h_z}\right)\]</div>
+</section>
 </section>
 
 
@@ -389,7 +434,7 @@ document.write(`
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Ram Pressure Shadowing</p>
+        <p class="prev-next-title">Ram Pressure Shadowing <code class="docutils literal notranslate"><span class="pre">shadows</span></code></p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -402,6 +447,19 @@ document.write(`
               
                 <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-satellite-galaxy-potential">The Satellite Galaxy Potential</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#particle-initialization">Particle Initialization</a></li>
+</ul>
+  </nav></div>
 
   <div class="sidebar-secondary-item">
 
@@ -446,7 +504,7 @@ document.write(`
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
     <br/>
   </p>
 </div>
