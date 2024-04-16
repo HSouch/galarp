@@ -6,7 +6,8 @@ from . import utils
 
 from .postprocessing import analysis
 
-__all__ = ["ShadowBase", "UniformShadow", "ExponentialShadow", "EdgeOnShadow"]
+__all__ = ["UniformShadow", "ExponentialShadow", "EdgeOnShadow", 
+           "UniformLinearZVariableShadow", "UniformExponentialZVariableShadow"]
 
 
 def _shadow_tangent(z, phi):
@@ -132,6 +133,34 @@ class ShadowBase:
                 plt.savefig(outname, dpi=200)
             else:
                 plt.show()
+    
+    def plot_shadow_xz(self, ax=None, **kwargs):
+        """ Plot the shadow in the x-z plane for easy debugging"""
+        xrange = kwargs.get('xrange', (-20, 40))
+        zrange = kwargs.get('zrange', (-10, 70))
+
+        t = kwargs.get('t', 0)
+
+        zs, xs = np.mgrid[zrange[0]:zrange[1], xrange[0]:xrange[1]]
+        ys = np.zeros_like(xs)
+
+        evaluation = self.evaluate(np.array([xs,ys,zs]).T, t)
+        
+        plt.figure(figsize=kwargs.get('figsize', (6, 6)))
+        plt.imshow(evaluation, origin="lower", cmap=kwargs.get("cmap", "Greys_r"), vmin=0, vmax=1, 
+                extent=[xrange[0], xrange[1], zrange[0], zrange[1]])
+        
+        plt.xlabel("X [kpc]")
+        plt.ylabel("Z [kpc]")
+        plt.colorbar(label="Shadowing    [0 = Complete Reduction]")
+
+        plt.tight_layout()
+        
+        outname = kwargs.get('outname', None)
+        if outname is not None:
+            plt.savefig(outname)
+        else:
+            plt.show()
 
     def __repr__(self):
         """
@@ -256,3 +285,75 @@ class EdgeOnShadow(ShadowBase):
         super().plot_shadow(
             ax=ax, wind=wind, color=color, outname=outname, x0=z0, y0=y0, z0=z0
         )
+
+
+class UniformLinearZVariableShadow(ShadowBase):
+    def __init__(self, damping=0.5, R_disk=10, zmin=0.5, phi=np.deg2rad(20), z_dropoff=10, **kwargs ):
+        super().__init__(damping=damping, R_disk=R_disk, shadow_name="Uniform", **kwargs)
+        if isinstance(zmin, u.Quantity):
+            zmin = zmin.to(u.kpc).value
+        self.zmin = zmin
+        self.phi = phi
+        self.z_dropoff = z_dropoff
+
+        self.frac = kwargs.get("frac", 0.9)
+        self.Rmax = kwargs.get("Rmax", 20)
+        self.zmax = kwargs.get("zmax", 2)
+        self.debug = kwargs.get("debug", False)
+
+        self.Rdisks = []
+
+    def evaluate(self, q, t):
+        x, y, z = q.T
+
+        if self.dynamic_shadow:
+            self.R_disk = analysis.calculate_rstrip(q.T, frac=self.frac, rmax=self.Rmax, zmax=self.zmax)
+        if self.debug:
+            self.Rdisks.append(self.R_disk)
+
+        cent = _shadow_tangent(z, self.phi)
+        dist = np.sqrt((x - cent) ** 2 + y**2)
+
+        out = np.ones(dist.shape)
+        in_disk = np.logical_and((z > self.zmin), (dist < self.R_disk))
+        out[in_disk] = self.damping + z[in_disk] / self.z_dropoff
+
+        out[out > 1] = 1
+
+        return out
+
+
+class UniformExponentialZVariableShadow(ShadowBase):
+    def __init__(self, damping=0.5, R_disk=10, zmin=0.5, phi=np.deg2rad(20), z_dropoff=10, **kwargs ):
+        super().__init__(damping=damping, R_disk=R_disk, shadow_name="Uniform", **kwargs)
+        if isinstance(zmin, u.Quantity):
+            zmin = zmin.to(u.kpc).value
+        self.zmin = zmin
+        self.phi = phi
+        self.z_dropoff = z_dropoff
+
+        self.frac = kwargs.get("frac", 0.9)
+        self.Rmax = kwargs.get("Rmax", 20)
+        self.zmax = kwargs.get("zmax", 2)
+        self.debug = kwargs.get("debug", False)
+
+        self.Rdisks = []
+
+    def evaluate(self, q, t):
+        x, y, z = q.T
+
+        if self.dynamic_shadow:
+            self.R_disk = analysis.calculate_rstrip(q.T, frac=self.frac, rmax=self.Rmax, zmax=self.zmax)
+        if self.debug:
+            self.Rdisks.append(self.R_disk)
+
+        cent = _shadow_tangent(z, self.phi)
+        dist = np.sqrt((x - cent) ** 2 + y**2)
+
+        out = np.ones(dist.shape)
+        in_disk = np.logical_and((z > self.zmin), (dist < self.R_disk))
+        out[in_disk] = self.damping +  (1 - np.exp(-z[in_disk] / self.z_dropoff))
+        
+        out[out > 1] = 1
+
+        return out
