@@ -58,6 +58,14 @@ to shrink as the disk is stripped.
    <img src="_static/plots/animated_hexbin_JZ.gif" width="80%%"  style="margin-bottom: 32px;"/>
 
 
+and the evolution of the stripping radius can be shown for each Runge-Kutta iteration (which are taken directly from
+a ``GalaRP`` run by appending ``self.Rdisk`` at each call of ``shadow.evaluate()``. This can be done by setting 
+``debug=True`` in the shadow class.
+
+.. raw:: html
+
+   <img src="_static/plots/shadow_rdisk_evolution.png" width="80%%"  style="margin-bottom: 32px;"/>
+
 
 User-Defined shadows
 --------------------
