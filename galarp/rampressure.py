@@ -211,6 +211,19 @@ class OrbitContainer:
         self.units = units
 
         self.metadata = metadata
+    
+    def get_orbit_data(self, transposed=True):
+        """ Return the position and velocity data as explicit arrays. """
+        pos, vel = self.data.pos, self.data.vel
+
+        x, y, z = pos.xyz.value
+        vx, vy, vz = vel.d_xyz.to(u.km / u.s).value
+        
+        if transposed:
+            x, y, z = x.T, y.T, z.T
+            vx, vy, vz = vx.T, vy.T, vz.T
+
+        return x, y, z, vx, vy, vz
 
     def plot(self, plot_3d=False, plot_orbits=False):
         if plot_3d:
@@ -231,3 +244,4 @@ class OrbitContainer:
         """ Load a pickled OrbitContainer. """
         with open(fn, "rb") as f:
             return pickle.load(f)
+
