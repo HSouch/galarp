@@ -41,15 +41,6 @@ def rstrip_and_medians(xyz, rmax=20, zmax=2, frac=0.9):
     return rstrip, [median_x, median_y, median_z]
 
 
-
-def stripped_median(xyz, rmax=20, zmax=2, frac=0.8):
-    x,y,z = xyz
-    r = np.sqrt(x**2 + y**2 + z**2)
-    this_r_cut = r[np.abs(z) < zmax]
-    this_r_cut = this_r_cut[this_r_cut < rmax]
-
-
-
 def rstrip(orbits, zmax=2 * u.kpc, r_strip_frac=0.8, rmax=20 * u.kpc):
     """
     Calculate the evolution of the stripping radius for a given OrbitContainer.
@@ -123,3 +114,33 @@ def final_rstrip(orbits, zmax=2 * u.kpc, r_strip_frac=0.8, rmax=20 * u.kpc):
     rstrip_final = mod_fit.pedastal.value       # The final stripping radius is the pedastal of the Gaussian model
 
     return rstrip_final
+
+
+def stripped(orbits, method="vrad"):
+    """
+    Calculate the number of stripped particles in the given orbits.
+
+    Parameters:
+    - orbits (OrbitCollection): The collection of orbits.
+
+    Returns:
+    - stripped_particles (numpy.ndarray): An array containing the number of stripped particles for each time step.
+
+    """
+    x, y, z, vx, vy, vz = get_orbit_data(orbits.data, transposed=False)
+
+    r = np.sqrt(x**2 + y**2 + z**2)
+
+    pot = orbits.metadata["POTENTIAL"]
+    energy = pot.energy([x, y, z])
+
+    v_escape = np.sqrt(2 * np.abs(energy)).to(u.km/u.s).value
+
+    if method == "vrad":
+        v_particle = (x * vx + y * vy + z * vz) / r
+    elif method == "vtot":
+        v_particle = np.sqrt(vx**2 + vy**2 + vz**2)
+
+    stripped = v_particle > v_escape
+
+    return np.sum(stripped, axis=1) / len(x[0])
