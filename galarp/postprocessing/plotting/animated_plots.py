@@ -125,4 +125,4 @@ def animated_hexbin_plot(orbits, x_ind=1, y_ind=2, n_frames=100, **kwargs):
         add_labels(ax)
 
     ani = animation.FuncAnimation(fig, animate, frames=frames, interval=100)
-    ani.save(outname, writer='ffmpeg', fps=24)
+    ani.save(outname, writer='pillow', fps=24)
