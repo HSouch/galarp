@@ -89,9 +89,10 @@ def animated_hexbin_plot(orbits, x_ind=1, y_ind=2, n_frames=100, **kwargs):
     
     def animate(i):
         this_x, this_y, this_z = x[i], y[i], z[i]
-        rstrip = analysis.calculate_rstrip([this_x, this_y, this_z], frac=0.9)
+        rstrip, strip_med = analysis.rstrip_and_medians([this_x, this_y, this_z], frac=0.9)
 
-        ell = utils.ellipse_coords(np.median(this_x), 0, rstrip, rstrip, 0, 100)
+
+        ell = utils.ellipse_coords(strip_med[0], strip_med[1], rstrip, rstrip, 0, 100)
 
         for axis in ax.flatten()[:]:
             axis.cla()
