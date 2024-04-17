@@ -6,6 +6,8 @@ from matplotlib import pyplot as plt
 
 from scipy import stats
 
+from .. import analysis
+
 from ...utils import get_orbit_data
 from ...rampressure import OrbitContainer
 
@@ -109,3 +111,21 @@ def rstrip_plot(orbits, zmax=2 * u.kpc, rstrip_frac = 0.8, rmax=20 * u.kpc,
         plt.show()
     if close_plot:
         plt.close()
+
+
+def stripped_plot(orbits, **kwargs):
+    stripped_frac = analysis.stripped(orbits)
+    outname = kwargs.get("outname", None)
+
+    plt.figure(figsize=kwargs.get("figsize", (6, 5)))
+
+    plt.plot(orbits.data.t, stripped_frac, **kwargs)
+    plt.ylim(-0.1, 1.1)
+    plt.xlabel("Time (Myr)")
+    plt.ylabel("Fraction of stripped particles")
+
+    plt.tight_layout()
+    if outname is not None:
+        plt.savefig(outname, dpi = kwargs.get("dpi", 200))
+    else:
+        plt.show()
