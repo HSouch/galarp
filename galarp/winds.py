@@ -52,7 +52,10 @@ class RPWind:
         return self.vector.to(u.kpc / u.Myr).value
     
     def evaluate_arr(self, ts):
-        return np.array([self.evaluate(t) for t in ts])
+        try:
+            return np.array([self.evaluate(t) for t in ts.value])
+        except:
+            return np.array([self.evaluate(t) for t in ts])
 
     def initialize_vector(self):
         if self.units is not None:
