@@ -21,6 +21,32 @@ def calculate_rstrip(xyz, rmax=20, zmax=2, frac=0.8):
         return cdf_xs[np.argmin(np.abs(cdf_vals - frac))]
     except:
         return 0
+    
+
+def rstrip_and_medians(xyz, rmax=20, zmax=2, frac=0.9):
+    x,y,z = xyz
+    r = np.sqrt(x**2 + y**2 + z**2)
+
+    rcut = (np.abs(z) < zmax) & (r < rmax)
+    
+    try:
+        cdf = stats.ecdf(r[rcut])
+        cdf_xs, cdf_vals = cdf.cdf.quantiles, cdf.cdf.probabilities
+        rstrip =  cdf_xs[np.argmin(np.abs(cdf_vals - frac))]
+    except:
+        rstrip = 0
+    
+    median_x, median_y, median_z = np.median([x[rcut], y[rcut], z[rcut]], axis=1)
+    
+    return rstrip, [median_x, median_y, median_z]
+
+
+
+def stripped_median(xyz, rmax=20, zmax=2, frac=0.8):
+    x,y,z = xyz
+    r = np.sqrt(x**2 + y**2 + z**2)
+    this_r_cut = r[np.abs(z) < zmax]
+    this_r_cut = this_r_cut[this_r_cut < rmax]
 
 
 
