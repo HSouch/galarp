@@ -3,7 +3,7 @@ import numpy as np
 
 import matplotlib as mpl
 
-__all__ = ["pyplot_style", "default_pyplot_style", "lavender_cmap"]
+__all__ = ["pyplot_style", "default_pyplot_style", "lavender_cmap", "default_colors"]
     
 
 def pyplot_style():
@@ -64,3 +64,7 @@ def lavender_cmap(step_1=175):
 
     new_cmap = mpl.colors.ListedColormap(full_arr)
     return new_cmap
+
+
+def default_colors():
+    return ['#4477AA', '#66CCEE', '#228833', '#CCBB44', '#EE6677', '#AA3377', '#BBBBBB']
