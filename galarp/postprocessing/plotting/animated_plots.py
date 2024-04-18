@@ -126,3 +126,62 @@ def animated_hexbin_plot(orbits, x_ind=1, y_ind=2, n_frames=100, **kwargs):
 
     ani = animation.FuncAnimation(fig, animate, frames=frames, interval=100)
     ani.save(outname, writer='pillow', fps=24)
+
+
+def r_vr(orbits, **kwargs):
+    frames = kwargs.get("frames", 200)
+    outname = kwargs.get("outname", "r_vr.gif")
+
+    x,y,z, vx, vy, vz = orbits.get_orbit_data(orbits.data, transposed=False)
+
+    r = np.sqrt(x**2 + y**2 + z**2)
+    vr = (x*vx + y*vy + z*vz) / r
+
+    gridsize = 30
+    xextent = (-10, 100)
+    yextent = (-50, 800)
+    vmin, vmax = 1, 200
+
+    fig, ax = plt.subplots(1, 1)
+
+    hb1 = ax.hexbin(r[0], vr[0], bins="log", cmap=kwargs.get("cmap", "viridis"), gridsize=(gridsize, gridsize),
+                        extent=[xextent[0], xextent[1], yextent[0], yextent[1]], 
+                        vmin=vmin, vmax=vmax, zorder = 5)
+    rs = np.linspace(*xextent, 500)
+
+    pot = orbits.metadata["POTENTIAL"]
+    v_escs = np.sqrt(2 * np.abs(pot.energy(np.array([np.zeros(len(rs)), np.zeros(len(rs)), rs])))).to(u.km/u.s)
+    
+    ax.plot(rs, v_escs,
+              color="k", lw=1, zorder=10)
+    
+    def add_labels(ax):
+        ax.set_xlabel("R [kpc]")
+        ax.set_ylabel(r"$v_R$ [km s$^{-1}$]")
+
+    add_labels(ax)
+
+    def animate(i):
+        this_r, this_vr = r[i], vr[i]
+
+        stripped = this_vr > np.sqrt(2 * np.abs(pot.energy(np.array([x[i], y[i], z[i]])))).to(u.km/u.s).value
+        ax.cla()
+
+        ax.plot(rs, v_escs, color="k", lw=1, zorder=10)
+        
+        hb1 = ax.hexbin(this_r, this_vr, bins="log", cmap=kwargs.get("cmap", "viridis"), gridsize=(gridsize, gridsize),
+                        extent=[xextent[0], xextent[1], yextent[0], yextent[1]], 
+                        vmin=vmin, vmax=vmax, zorder = 5)
+
+        xlims, ylims = ax.get_xlim(), ax.get_ylim()
+        dx, dy = xlims[1] - xlims[0], ylims[1] - ylims[0]
+
+        ax.text(xlims[1] - 0.2 * dx, ylims[1] - 0.05 * dy, f"t = {orbits.data.t[i]:.1f}", fontsize=8)
+        ax.text(xlims[1] - 0.2 * dx, ylims[1] - 0.1 * dy, f"Stripped: {stripped.sum() / len(stripped):.2f}", fontsize=8)
+
+        current_time = orbits.data.t[i].value
+
+        add_labels(ax)
+    
+    ani = animation.FuncAnimation(fig, animate, frames=frames, interval=100)
+    ani.save(outname, writer='pillow', fps=24)
