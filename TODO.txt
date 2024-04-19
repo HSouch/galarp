@@ -1,0 +1,30 @@
+
+==================================================
+==================== FEATURES ====================
+==================================================
+
+
+- Add cloud growth and destruction                              []
+- Add dropoffs for edge-on clouds                               []
+
+
+
+==================================================
+==================== BUILTINS ====================
+==================================================
+
+- Add Roediger & Bruggen builtin stuff                          []
+- Add Vollmer stuff                                             []
+
+==================================================
+=================== DEBUGGING ====================
+==================================================
+
+
+- Fix the pyproject.toml file to properly work                  []
+- Get the tox (or nox) testing stuff working                    []
+- Figure out what the heck is going on with the                 []
+    stripping particles
+
+
+- Add tests for uncovered code                                  []
