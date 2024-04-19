@@ -2,7 +2,11 @@ from astropy import units as u
 from gala.units import galactic
 import numpy as np
 
-import galarp as grp
+from ..utils import gen_mass_profile
+
+from .. import builtins
+
+from .. import winds, particle_grids, shadows, rampressure
 
 
 __all__ = ['ExampleUniformEvent', 'ExampleLorentzianEvent']
@@ -18,19 +22,19 @@ def ExampleUniformEvent(inc=45., strength=600.):
     Returns:
         galarp OrbitContainer: The orbit output.
     """
-    pot = grp.builtins.JZ2023_Satellite()
-    mass_profile = grp.gen_mass_profile(pot)
+    pot = builtins.JZ2023_Satellite()
+    mass_profile = gen_mass_profile(pot)
     
-    wind = grp.RPWind(units=galactic)
+    wind = winds.RPWind(units=galactic)
     wind.init_from_inc(inclination=np.deg2rad(inc), strength= strength *u.km/u.s)
     
-    shadow = grp.UniformShadow()
+    shadow = shadows.UniformShadow()
     shadow.init_from_wind(wind)
 
-    particles = grp.UniformGrid(Rmax= 10, n_particles= 20, z_start= 0.5)
+    particles = particle_grids.UniformGrid(Rmax= 10, n_particles= 20, z_start= 0.5)
     particles.generate(mass_profile)
 
-    sim = grp.RPSim(wind=wind, potential=pot, shadow=shadow, rho_icm=1e-26 * u.g/ u.cm**3)
+    sim = rampressure.RPSim(wind=wind, potential=pot, shadow=shadow, rho_icm=1e-26 * u.g/ u.cm**3)
     orbits = sim.run(particles, rho_icm=1e-26 * u.g/ u.cm**3, integration_time=1000 * u.Myr, dt=2*u.Myr)
     return orbits
 
@@ -46,17 +50,17 @@ def ExampleLorentzianEvent(inc=45, strength=600):
         galarp OrbitContainer: The orbit output.
     """
 
-    pot = grp.builtins.JZ2023_Satellite()
-    mass_profile = grp.gen_mass_profile(pot)
-    wind = grp.LorentzianWind(t0=500 * u.Myr, width = 500 * u.Myr, units=galactic)
+    pot = builtins.JZ2023_Satellite()
+    mass_profile = gen_mass_profile(pot)
+    wind = winds.LorentzianWind(t0=500 * u.Myr, width = 500 * u.Myr, units=galactic)
     wind.init_from_inc(inclination=np.deg2rad(inc), strength= strength *u.km/u.s)
     
-    shadow = grp.UniformShadow()
+    shadow = shadows.UniformShadow()
     shadow.init_from_wind(wind)
 
-    particles = grp.UniformGrid(Rmax= 10, n_particles= 20, z_start= 0.5)
+    particles = particle_grids.UniformGrid(Rmax= 10, n_particles= 20, z_start= 0.5)
     particles.generate(mass_profile)
 
-    sim = grp.RPSim(wind=wind, potential=pot, shadow=shadow, rho_icm=1e-26 * u.g/ u.cm**3)
+    sim = rampressure.RPSim(wind=wind, potential=pot, shadow=shadow, rho_icm=1e-26 * u.g/ u.cm**3)
     orbits = sim.run(particles, rho_icm=1e-26 * u.g/ u.cm**3, integration_time=1000 * u.Myr, dt=2*u.Myr)
     return orbits
