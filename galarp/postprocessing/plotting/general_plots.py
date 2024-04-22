@@ -4,7 +4,7 @@ import os
 
 from .. import analysis
 from .. import utils            # TODO This is horrible, but it works for now. Refactor the top-level utils file.
-from ...utils import get_orbit_data, rotate
+from ...utils import rotate
 
 from matplotlib import pyplot as plt
 from scipy.interpolate import interp1d

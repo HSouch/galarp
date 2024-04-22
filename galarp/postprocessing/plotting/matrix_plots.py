@@ -88,7 +88,6 @@ def density_matrix(orbits, x_ind=0, y_ind=1, nrows=4, ncols=4, outname=None, **k
     x, y = data[x_ind], data[y_ind]
 
     mappables = []
-    index = 0
     def method(i, j, index, x, y):
         this_x, this_y = x.T[times[index]], y.T[times[index]]
 
@@ -160,7 +159,7 @@ def rstrip_check(orbits, x_ind=0, y_ind=1, nrows=4, ncols=4, outname=None, **kwa
     x,y,z, *_ = get_orbit_data(orbits.data)
 
     mappables = []
-    index = 0
+
     def method(i, j, index, x, y, z):
         this_x, this_y, this_z = x.T[times[index]], y.T[times[index]], z.T[times[index]]
 

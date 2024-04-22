@@ -37,7 +37,7 @@ def rstrip_plot(orbits, zmax=2 * u.kpc, rstrip_frac = 0.8, rmax=20 * u.kpc,
     None
     """
     
-    if type(orbits) == str:
+    if isinstance(orbits, str):
         orbits = OrbitContainer.load(orbits)
 
     outname = kwargs.get("outname", None)

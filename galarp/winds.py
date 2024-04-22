@@ -54,7 +54,7 @@ class RPWind:
     def evaluate_arr(self, ts):
         try:
             return np.array([self.evaluate(t) for t in ts.value])
-        except:
+        except Exception:
             return np.array([self.evaluate(t) for t in ts])
 
     def initialize_vector(self):
@@ -181,7 +181,8 @@ class InterpolatedWind(RPWind):
 
         ts = t[t_key] * t_units.to(u.Myr)
 
-        if not isinstance(vel_keys, list): vel_keys = [vel_keys]
+        if not isinstance(vel_keys, list): 
+            vel_keys = [vel_keys]
 
         vels = np.array([t[key] for key in vel_keys])
         v_tot = np.sqrt(np.sum(vels**2, axis=0)) * v_units.to(u.kpc/u.Myr)

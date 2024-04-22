@@ -36,12 +36,6 @@ def animated_hexbin_plot(orbits, x_ind=1, y_ind=2, n_frames=100, **kwargs):
     vextent = kwargs.get("vextent", (-100, 300))
     vextent = (-vextent, vextent) if isinstance(vextent, (int, float)) else vextent
 
-    dx, dy = xextent[1] - xextent[0], yextent[1] - yextent[0]
-
-    hlines, vlines = kwargs.get("hlines", []), kwargs.get("vlines", [])
-
-    cbar_loc = kwargs.get("cbar_loc", "lower left")
-
     vmin, vmax = kwargs.get("vmin", 1), kwargs.get("vmax", 500)
 
     def add_labels(ax):
@@ -60,9 +54,6 @@ def animated_hexbin_plot(orbits, x_ind=1, y_ind=2, n_frames=100, **kwargs):
 
     x,y,z,vx,vy,vz = orbits.get_orbit_data(transposed=False)   
 
-    wind = orbits.metadata["WIND"]
-    density = orbits.metadata["RHO_ICM"]
-
     wind_profile = np.sqrt(np.sum(orbits.metadata["WIND"].evaluate_arr(orbits.data.t) ** 2, axis=1)) * u.kpc/u.Myr
     wind_profile = wind_profile.to(u.cm/u.s)
 
@@ -70,15 +61,15 @@ def animated_hexbin_plot(orbits, x_ind=1, y_ind=2, n_frames=100, **kwargs):
     rp_profile = wind_profile ** 2 * dens_profile
     
     
-    hb1 = ax[0][0].hexbin(x[0], y[0], bins="log", cmap=cmap, gridsize=(gridsize, gridsize),
-                        extent=[xextent[0], xextent[1], xextent[0], xextent[1]], 
-                        vmin=vmin, vmax=vmax, zorder = 5)
-    hb2 = ax[1][0].hexbin(x[0], z[0], bins="log", cmap=cmap, gridsize=(gridsize, gridsize),
-                        extent=[xextent[0], xextent[1], yextent[0], yextent[1]], 
-                        vmin=vmin, vmax=vmax, zorder = 5)
-    hb3 = ax[0][1].hexbin(z[0], vz[0], bins="log", cmap=cmap, gridsize=(gridsize, gridsize),
-                        extent=[vextent[0], vextent[1], -400, 400], 
-                        vmin=vmin, vmax=vmax, zorder = 5)
+    ax[0][0].hexbin(x[0], y[0], bins="log", cmap=cmap, gridsize=(gridsize, gridsize),
+                    extent=[xextent[0], xextent[1], xextent[0], xextent[1]], 
+                    vmin=vmin, vmax=vmax, zorder = 5)
+    ax[1][0].hexbin(x[0], z[0], bins="log", cmap=cmap, gridsize=(gridsize, gridsize),
+                    extent=[xextent[0], xextent[1], yextent[0], yextent[1]], 
+                    vmin=vmin, vmax=vmax, zorder = 5)
+    ax[0][1].hexbin(z[0], vz[0], bins="log", cmap=cmap, gridsize=(gridsize, gridsize),
+                    extent=[vextent[0], vextent[1], -400, 400], 
+                    vmin=vmin, vmax=vmax, zorder = 5)
     
     ax[1][1].plot(orbits.data.t, rp_profile, color="black", lw=2)
     
@@ -97,21 +88,18 @@ def animated_hexbin_plot(orbits, x_ind=1, y_ind=2, n_frames=100, **kwargs):
         for axis in ax.flatten()[:]:
             axis.cla()
 
-        hb1 = ax[0][0].hexbin(x[i], y[i], bins="log", cmap=cmap, gridsize=(gridsize, gridsize),
+        ax[0][0].hexbin(x[i], y[i], bins="log", cmap=cmap, gridsize=(gridsize, gridsize),
                         extent=[xextent[0], xextent[1], xextent[0], xextent[1]], 
                         vmin=vmin, vmax=vmax, zorder = 5)
         
         
-        hb2 = ax[1][0].hexbin(x[i], z[i], bins="log", cmap=cmap, gridsize=(gridsize, gridsize),
+        ax[1][0].hexbin(x[i], z[i], bins="log", cmap=cmap, gridsize=(gridsize, gridsize),
                         extent=[xextent[0], xextent[1], yextent[0], yextent[1]], 
                         vmin=vmin, vmax=vmax, zorder = 5)
-        hb3 = ax[0][1].hexbin(z[i], vz[i], bins="log", cmap=cmap, gridsize=(gridsize, gridsize),
+        ax[0][1].hexbin(z[i], vz[i], bins="log", cmap=cmap, gridsize=(gridsize, gridsize),
                         extent=[vextent[0], vextent[1], -400, 400], 
                         vmin=vmin, vmax=vmax, zorder = 5)
-        xlims, ylims = ax[0][0].get_xlim(), ax[0][0].get_ylim()
-        dx, dy = xlims[1] - xlims[0], ylims[1] - ylims[0]
-
-
+        ylims = ax[0][0].get_ylim()
 
         ax[0][0].plot(ell[0], ell[1], color="black", zorder=6)
         ax[1][0].plot(ell[0], ell[2], color="black", zorder=6)
@@ -144,9 +132,9 @@ def r_vr(orbits, **kwargs):
 
     fig, ax = plt.subplots(1, 1)
 
-    hb1 = ax.hexbin(r[0], vr[0], bins="log", cmap=kwargs.get("cmap", "viridis"), gridsize=(gridsize, gridsize),
-                        extent=[xextent[0], xextent[1], yextent[0], yextent[1]], 
-                        vmin=vmin, vmax=vmax, zorder = 5)
+    ax.hexbin(r[0], vr[0], bins="log", cmap=kwargs.get("cmap", "viridis"), gridsize=(gridsize, gridsize),
+              extent=[xextent[0], xextent[1], yextent[0], yextent[1]], 
+              vmin=vmin, vmax=vmax, zorder = 5)
     rs = np.linspace(*xextent, 500)
 
     pot = orbits.metadata["POTENTIAL"]
@@ -169,17 +157,15 @@ def r_vr(orbits, **kwargs):
 
         ax.plot(rs, v_escs, color="k", lw=1, zorder=10)
         
-        hb1 = ax.hexbin(this_r, this_vr, bins="log", cmap=kwargs.get("cmap", "viridis"), gridsize=(gridsize, gridsize),
-                        extent=[xextent[0], xextent[1], yextent[0], yextent[1]], 
-                        vmin=vmin, vmax=vmax, zorder = 5)
+        ax.hexbin(this_r, this_vr, bins="log", cmap=kwargs.get("cmap", "viridis"), gridsize=(gridsize, gridsize),
+                  extent=[xextent[0], xextent[1], yextent[0], yextent[1]], 
+                  vmin=vmin, vmax=vmax, zorder = 5)
 
         xlims, ylims = ax.get_xlim(), ax.get_ylim()
         dx, dy = xlims[1] - xlims[0], ylims[1] - ylims[0]
 
         ax.text(xlims[1] - 0.2 * dx, ylims[1] - 0.05 * dy, f"t = {orbits.data.t[i]:.1f}", fontsize=8)
         ax.text(xlims[1] - 0.2 * dx, ylims[1] - 0.1 * dy, f"Stripped: {stripped.sum() / len(stripped):.2f}", fontsize=8)
-
-        current_time = orbits.data.t[i].value
 
         add_labels(ax)
     

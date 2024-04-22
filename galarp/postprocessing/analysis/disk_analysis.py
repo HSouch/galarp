@@ -19,7 +19,7 @@ def calculate_rstrip(xyz, rmax=20, zmax=2, frac=0.8):
         cdf = stats.ecdf(this_r_cut)
         cdf_xs, cdf_vals = cdf.cdf.quantiles, cdf.cdf.probabilities
         return cdf_xs[np.argmin(np.abs(cdf_vals - frac))]
-    except:
+    except Exception:
         return 0
     
 
@@ -33,7 +33,7 @@ def rstrip_and_medians(xyz, rmax=20, zmax=2, frac=0.9):
         cdf = stats.ecdf(r[rcut])
         cdf_xs, cdf_vals = cdf.cdf.quantiles, cdf.cdf.probabilities
         rstrip =  cdf_xs[np.argmin(np.abs(cdf_vals - frac))]
-    except:
+    except Exception:
         rstrip = 0
     
     median_x, median_y, median_z = np.median([x[rcut], y[rcut], z[rcut]], axis=1)
@@ -60,7 +60,7 @@ def rstrip(orbits, zmax=2 * u.kpc, r_strip_frac=0.8, rmax=20 * u.kpc):
     - rstrips (list): The stripping radii at each measured time.
     """
 
-    if type(orbits) == str:
+    if isinstance(orbits, str): 
         orbits = OrbitContainer.load(orbits)
 
     x,y,z, *_ = get_orbit_data(orbits.data)
