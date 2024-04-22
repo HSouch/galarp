@@ -1,7 +1,7 @@
 
 import numpy as np
 from astropy import units as u
-
+from scipy.interpolate import interp1d
 
 from .helpers import RPWindTestBase
 from ..winds import RPWind, LorentzianWind, StepFunctionWind, InterpolatedWind
@@ -29,5 +29,7 @@ class TestInterpolatedWind(RPWindTestBase):
         ys.append(np.sqrt(np.sum(lor.evaluate(x.value) ** 2, axis=0)))
     ys = np.array(ys)
 
-    wind = InterpolatedWind()
-    wind.from_xy(xs, ys)
+    interp = interp1d(xs, ys, bounds_error=False, fill_value="extrapolate")
+
+    wind = InterpolatedWind(interp=interp)
+
