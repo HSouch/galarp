@@ -239,14 +239,18 @@ class ExponentialShadow(ShadowBase):
         self, damping=0.5, R_disk=10 * u.kpc, zmin=0 * u.kpc, phi=np.deg2rad(20)
     ):
         super().__init__(damping=damping, R_disk=R_disk, shadow_name="Exponential")
-        self.zmin, self.phi = zmin, phi
+
+        if isinstance(zmin, u.Quantity):
+            zmin = zmin.to(u.kpc).value
+        self.zmin = zmin
+        self.phi = phi
 
     def evaluate(self, q, t):
         x, y, z = q.T
         cent = _shadow_tangent(z, self.phi)
         dist = np.sqrt((x - cent) ** 2 + y**2)
-        out = np.exp(-dist / self.R_disk.value)
-        in_disk = np.logical_and((z > self.zmin.value), (dist < self.R_disk.value))
+        out = np.exp(-dist / self.R_disk)
+        in_disk = np.logical_and((z > self.zmin), (dist < self.R_disk))
         out[in_disk] *= self.damping
         return out
 
