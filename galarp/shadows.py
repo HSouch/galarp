@@ -90,9 +90,9 @@ class ShadowBase:
         x = np.linspace(-R_disk, R_disk, 100)
         y = np.linspace(-R_disk, R_disk, 100)
         X, Y = np.meshgrid(x, y)
-        XY = self.evaluate(np.array([X, Y, np.zeros(X.shape) + z0]).T)
-        XZ = self.evaluate(np.array([X, np.zeros(X.shape) + y0, Y]).T)
-        YZ = self.evaluate(np.array([np.zeros(X.shape) + x0, X, Y]).T)
+        XY = self.evaluate(np.array([X, Y, np.zeros(X.shape) + z0]).T, 0)
+        XZ = self.evaluate(np.array([X, np.zeros(X.shape) + y0, Y]).T, 0)
+        YZ = self.evaluate(np.array([np.zeros(X.shape) + x0, X, Y]).T, 0)
 
         im1 = ax[0].imshow(
             1 - XY,
@@ -119,8 +119,6 @@ class ShadowBase:
         plt.colorbar(mappable=im1, ax=ax[0], location="top")
         plt.colorbar(mappable=im2, ax=ax[1], location="top")
         plt.colorbar(mappable=im3, ax=ax[2], location="top")
-
-        utils.plot_disk(ax, R_disk, lw=1, color="black")
 
         if wind is not None:
             utils.plot_wind_vector(
@@ -217,7 +215,7 @@ class UniformShadow(ShadowBase):
     def plot_shadow(
         self, ax=None, wind=None, color="black", outname=None, x0=0, y0=0, z0=None
     ):
-        z0 = self.zmin + 0.5 * u.kpc if z0 is None else z0
+        z0 = self.zmin + 0.5 if z0 is None else z0
         super().plot_shadow(
             ax=ax, wind=wind, color=color, outname=outname, x0=z0, y0=y0, z0=z0
         )
@@ -257,7 +255,7 @@ class ExponentialShadow(ShadowBase):
     def plot_shadow(
         self, ax=None, wind=None, color="black", outname=None, x0=0, y0=0, z0=None
     ):
-        z0 = self.zmin + 0.5 * u.kpc if z0 is None else z0
+        z0 = self.zmin + 0.5 if z0 is None else z0
         super().plot_shadow(
             ax=ax, wind=wind, color=color, outname=outname, x0=z0, y0=y0, z0=z0
         )

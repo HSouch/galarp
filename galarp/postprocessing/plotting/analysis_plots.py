@@ -119,7 +119,7 @@ def stripped_plot(orbits, **kwargs):
 
     plt.figure(figsize=kwargs.get("figsize", (6, 5)))
 
-    plt.plot(orbits.data.t, stripped_frac, **kwargs)
+    plt.plot(orbits.data.t, stripped_frac)
     plt.ylim(-0.1, 1.1)
     plt.xlabel("Time (Myr)")
     plt.ylabel("Fraction of stripped particles")

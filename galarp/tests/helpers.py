@@ -14,6 +14,10 @@ class ShadowTestBase:
         assert eval is not None
         assert eval.shape[0] == len(self.xyz)
 
+    def test_plotting(self, tmp_path):
+        self.shadow.plot_shadow(outname=f'{tmp_path}/{self.shadow.shadow_name}.png')
+        self.shadow.plot_shadow_xz(outname=f'{tmp_path}/{self.shadow.shadow_name}_xz.png')
+    
 
 class RPWindTestBase:
     name = None

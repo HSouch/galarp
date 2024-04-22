@@ -129,10 +129,10 @@ def animated_hexbin_plot(orbits, x_ind=1, y_ind=2, n_frames=100, **kwargs):
 
 
 def r_vr(orbits, **kwargs):
-    frames = kwargs.get("frames", 200)
+    n_frames = kwargs.get("n_frames", 200)
     outname = kwargs.get("outname", "r_vr.gif")
 
-    x,y,z, vx, vy, vz = orbits.get_orbit_data(orbits.data, transposed=False)
+    x,y,z, vx, vy, vz = orbits.get_orbit_data(transposed=False)
 
     r = np.sqrt(x**2 + y**2 + z**2)
     vr = (x*vx + y*vy + z*vz) / r
@@ -183,5 +183,5 @@ def r_vr(orbits, **kwargs):
 
         add_labels(ax)
     
-    ani = animation.FuncAnimation(fig, animate, frames=frames, interval=100)
+    ani = animation.FuncAnimation(fig, animate, frames=n_frames, interval=100)
     ani.save(outname, writer='pillow', fps=24)
