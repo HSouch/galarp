@@ -43,7 +43,7 @@ exclude = [
     "__init__"
 ]
 
-ignore = ["F403"]
+lint.ignore = ["F401", "F403"]
 
 line-length = 88
 

@@ -8,5 +8,8 @@ def tests(session):
 
     session.run("pytest")
 
-    #session.install("ruff")
-    #session.run("ruff check", "galarp")
+@nox.session
+def lint(session):
+    """ Checking style using flake8"""
+    session.install("ruff")
+    session.run("ruff", "check", "galarp")
