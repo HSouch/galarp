@@ -78,6 +78,7 @@ class RPSim:
         self.rho_icm = rho_icm
 
         self.inclination = wind.inclination()
+
         if (
             np.rad2deg(self.inclination) < 10
             and type(self.shadow) != shadows.EdgeOnShadow
