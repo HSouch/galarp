@@ -224,7 +224,10 @@ class OrbitContainer:
             vx, vy, vz = vx.T, vy.T, vz.T
 
         return x, y, z, vx, vy, vz
-    
+
+    def get_times(self):
+        """ Return the time array for the simulation. """
+        return self.data.t.value    
 
     def get_rp_profile(self, with_units=True):
         """ Return the ram pressure profile for a given simulation. """
@@ -239,7 +242,6 @@ class OrbitContainer:
             return rp_profile
         else:
             return rp_profile.value
-
 
     def plot(self, plot_3d=False, plot_orbits=False):
         if plot_3d:
