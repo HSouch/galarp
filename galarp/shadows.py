@@ -262,16 +262,23 @@ class ExponentialShadow(ShadowBase):
 
 
 class EdgeOnShadow(ShadowBase):
-    def __init__(self, damping=0.5, R_disk=10 * u.kpc, Z_disk=2 * u.kpc, x0=0 * u.kpc):
-        super().__init__(damping=damping, R_disk=R_disk, shadow_name="EdgeOn")
+    def __init__(self, damping=0.5, R_disk=10 * u.kpc, Z_disk=2 * u.kpc, x0=0 * u.kpc, **kwargs):
+        super().__init__(damping=damping, R_disk=R_disk, shadow_name="EdgeOn", **kwargs)
 
         # Always assume kpc for xyz inputs (galactic coordinate system)
         self.x0 = x0.to(u.kpc).value
         self.R_disk = R_disk.to(u.kpc).value
         self.Z_disk = Z_disk.to(u.kpc).value
 
+        self.frac = kwargs.get("frac", 0.9)
+        self.Rmax = kwargs.get("Rmax", 20)
+        self.zmax = kwargs.get("zmax", 2)
+
     def evaluate(self, q, t):
         x, y, z = q.T
+
+        if self.dynamic_shadow:
+            self.R_disk = analysis.calculate_rstrip(q.T, frac=self.frac, rmax=self.Rmax, zmax=self.zmax)
 
         in_ellipsoid = (y / self.R_disk) ** 2 + (z / self.Z_disk) ** 2 < 1
 
