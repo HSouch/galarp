@@ -26,3 +26,18 @@ def NA2023_Satellite():
     gas = gp.MiyamotoNagaiPotential(1e10 * u.Msun, a= 10.1 * u.kpc, b = 0.87 * u.kpc, units=galactic)
 
     return gp.CompositePotential(dm=dm, stars=stars, gas=gas)
+
+
+def RB2006_Satellite():
+    """ Satellite potential for Roediger & Brüggen 2006
+        See https://academic.oup.com/mnras/article/369/2/567/3101476
+    """
+
+    dm = gp.BurkertPotential.from_r0(23 * u.kpc, units=galactic)
+
+    stars = gp.MiyamotoNagaiPotential(m=1e11 * u.Msun, a=4 * u.kpc, b=0.25 * u.kpc, units=galactic)
+    bulge = gp.HernquistPotential(m=1e10 * u.Msun, c=0.4 * u.kpc, units=galactic)
+    
+    gas = gp.MiyamotoNagaiPotential(m=10**10 * u.Msun, a=7 * u.kpc, b=0.4 * u.kpc, units=galactic)
+
+    return gp.CompositePotential(dm=dm, stars=stars, bulge=bulge, gas=gas)
