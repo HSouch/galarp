@@ -200,22 +200,16 @@ class ExponentialGrid(ParticleGrid):
 
             if velocities:
                 theta = np.arctan2(y, x)
-                vx, vy = self.velocity(
-                    mass_profile, R, theta
-                )  # Initialize with circular velocity
+                vx, vy = self.velocity(mass_profile, R, theta)  # Initialize with circular velocity
 
                 inc = np.arctan2(z, np.sqrt(x**2 + y**2))
                 vtot = np.sqrt(vx**2 + vy**2)
-                vz = (
-                    vtot * np.sin(inc)
-                )  # TODO improve this (better than nothing but not ideal. Leads to "sloshing")
+                vz = (vtot * np.sin(inc))  # TODO improve this (better than nothing but not ideal. Leads to "sloshing")
 
                 p_v0 = u.Quantity([vx, vy, vz])
 
                 if self.veldisp is not None:
-                    p_v0 += np.random.normal(scale=self.veldisp.value, size=3) * (
-                        u.km / u.s
-                    )  # Add random velocity dispersion
+                    p_v0 += np.random.normal(scale=self.veldisp.value, size=3) * (u.km / u.s)  # Add random vel disp.
             else:
                 p_v0 = [0.0, 0.0, 0.0] * (u.km / u.s)
 
@@ -248,6 +242,7 @@ def generate_exponential_positions(
     h_R=4 * u.kpc,
     h_z=0.5 * u.kpc,
     Rmax=15 * u.kpc,
+    Rmin=0.1 * u.kpc,
     zmax=2 * u.kpc,
     outname=None,
 ):
@@ -260,6 +255,7 @@ def generate_exponential_positions(
 
     h_R, h_z = h_R.to(u.kpc).value, h_z.to(u.kpc).value
     rmax = Rmax.to(u.kpc).value
+    rmin = Rmin.to(u.kpc).value
     zmax = zmax.to(u.kpc).value
 
     Rs = []
@@ -269,7 +265,7 @@ def generate_exponential_positions(
         good = False
         while not good:  # TODO maybe add a max_tries here with a warning message
             rand_R, rand_z = np.random.random(2)
-            R, z = remap(rand_R, 0, rmax), remap(rand_z, -zmax, zmax)
+            R, z = remap(rand_R, rmin, rmax), remap(rand_z, -zmax, zmax)
 
             v = n_0 * np.exp(-R / h_R) * np.exp(-np.abs(z) / h_z)
 
