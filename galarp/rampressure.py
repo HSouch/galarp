@@ -224,6 +224,22 @@ class OrbitContainer:
             vx, vy, vz = vx.T, vy.T, vz.T
 
         return x, y, z, vx, vy, vz
+    
+
+    def get_rp_profile(self, with_units=True):
+        """ Return the ram pressure profile for a given simulation. """
+        wind, rho = self.metadata["WIND"], self.metadata["RHO_ICM"]
+        times = self.data.t
+
+        rho_prof = rho.evaluate_arr(times) * u.g / u.cm**3
+        wind_prof = np.sqrt(np.sum(wind.evaluate_arr(times) ** 2,axis=1)) * u.kpc / u.Myr
+        rp_profile = (rho_prof * wind_prof ** 2).to(u.g / u.cm / u.s **2)
+
+        if with_units:
+            return rp_profile
+        else:
+            return rp_profile.value
+
 
     def plot(self, plot_3d=False, plot_orbits=False):
         if plot_3d:
