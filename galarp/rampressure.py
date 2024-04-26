@@ -19,7 +19,7 @@ from gala.units import galactic
 import gala.integrate as gi
 
 
-__all__ = ["F_RPS", "RPSim", "OrbitContainer"]
+__all__ = ["F_RPS", "F_RPS_Surface_Density", "RPSim", "OrbitContainer"]
 
 
 def F_RPS(
@@ -40,9 +40,39 @@ def F_RPS(
     # TODO remove units altogether
     if wind_on:
         v_perp = p - wind.evaluate(t)
-        a_ram = (np.pi * rho.evaluate(t) * r_cloud**2 / m_cloud).to(1 / u.kpc).value * (
-            v_perp**2
-        )
+        a_ram = (np.pi * rho.evaluate(t) * r_cloud**2 / m_cloud).to(1 / u.kpc).value * (v_perp**2)
+
+        a_ram = a_ram.T
+
+        # If wind is on and shadow exists, apply shadow to appropriate particles
+        if shadow is not None:
+            shadow = shadow.evaluate(q, t).T
+            a_ram *= shadow
+
+        acc += a_ram
+
+    return np.vstack((p.T, acc))
+
+
+def F_RPS_Surface_Density(
+    t, w, potential, shadow, wind, rho, sigma_gas, wind_on=True, debug=False
+):
+    # position units are in kpc
+    # velocity units here are in kpc/Myr
+    x, y, z, vx, vy, vz = w
+    q = np.stack((x, y, z), axis=1)
+    p = np.stack((vx, vy, vz), axis=1)
+
+    # compute acceleration from potential:
+    _t = np.array([0.0])
+    acc = -potential._gradient(q, _t).T
+
+    # Compute acceleration from ram pressure
+    # a_ram = pi * rho * v_perp^2 * r_cloud^2 / m_cloud
+    # TODO remove units altogether
+    if wind_on:
+        v_perp = p - wind.evaluate(t)
+        a_ram = (rho.evaluate(t) / sigma_gas).to(1 / u.kpc).value * (v_perp**2)
 
         a_ram = a_ram.T
 
@@ -58,14 +88,7 @@ def F_RPS(
 
 class RPSim:
     def __init__(
-        self,
-        wind,
-        potential,
-        rho_icm=None,
-        shadow=None,
-        potential_name="",
-        method=F_RPS,
-    ):
+        self, wind, potential, rho_icm=None, shadow=None, potential_name="", method=F_RPS):
         self.method = method
 
         self.wind = wind
@@ -79,13 +102,8 @@ class RPSim:
 
         self.inclination = wind.inclination()
 
-        if (
-            np.rad2deg(self.inclination) < 10
-            and type(self.shadow) != shadows.EdgeOnShadow
-        ):
-            print(
-                "Warning: Inclination is less than 10 degrees. You should be using an EdgeOnShadow."
-            )
+        if (np.rad2deg(self.inclination) < 10 and type(self.shadow) != shadows.EdgeOnShadow):
+            print( "Warning: Inclination is less than 10 degrees. You should be using an EdgeOnShadow." )
 
         self.sim_results = []
 
@@ -94,11 +112,10 @@ class RPSim:
         particles,
         rho_icm=2e-27 * (u.g / u.cm**3),
         t0=100 * u.Myr,
-        r_cloud=50 * u.pc,
-        m_cloud=1e5 * u.Msun,
+        r_cloud=50 * u.pc, m_cloud=1e5 * u.Msun,
+        sigma_gas = 10 * u.Msun / u.pc**2,
         wind_on=True,
-        integration_time=500 * u.Myr,
-        dt=5 * u.Myr,
+        integration_time=500 * u.Myr, dt=5 * u.Myr,
         printout=True,
         wind=None,
         outdir=None,
@@ -109,6 +126,8 @@ class RPSim:
             self.rho_icm = densities.Density(rho_icm)
         else:
             self.rho_icm = rho_icm
+
+        sigma_gas = sigma_gas
 
         # Allow for user to switch out wind in the run method
         if wind is not None:
@@ -130,22 +149,20 @@ class RPSim:
                     printout_width, "-"))
             print("".center(printout_width, "-"))
 
-        # potential, shadow, wind_vec, rho, r_cloud, m_cloud, damping=1, wind_on=True)
+
+        # Set up the function arguments for the given method to calculate the RPS-added acceleration
+        if self.method == F_RPS:
+            func_args = (self.potential, self.shadow, self.wind, self.rho_icm, r_cloud, m_cloud, wind_on)
+        elif self.method == F_RPS_Surface_Density:
+            func_args = (self.potential, self.shadow, self.wind, self.rho_icm, sigma_gas, wind_on)
 
         integrator = gi.RK5Integrator(
             self.method,
-            func_args=(
-                self.potential,
-                self.shadow,
-                self.wind,
-                self.rho_icm,
-                r_cloud,
-                m_cloud,
-                wind_on,
-            ),
+            func_args=func_args,
             func_units=galactic,
             progress=not debug,
         )
+
 
         orbits = integrator.run(
             gd.combine(particles.container), dt=dt, t1=0, t2=integration_time
