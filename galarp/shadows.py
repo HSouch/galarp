@@ -346,6 +346,8 @@ class UniformExponentialZVariableShadow(ShadowBase):
         self.zmax = kwargs.get("zmax", 2)
         self.debug = kwargs.get("debug", False)
 
+        self.dynamic_ratio = kwargs.get("dynamic_ratio", 1.5)
+
         self.Rdisks = []
 
     def evaluate(self, q, t):
