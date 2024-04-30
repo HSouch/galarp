@@ -149,6 +149,11 @@ class InterpolatedWind(RPWind):
             wind strength at that time.
         """
         return self.unit_vector * self.interp(t)
+    
+
+    def inclination(self, t=0):
+        return self.inc
+
 
     @staticmethod
     def from_table(fn, t_key, vel_keys, format="ascii",
