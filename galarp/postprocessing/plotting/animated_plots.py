@@ -24,6 +24,7 @@ def animated_hexbin_plot(orbits, x_ind=1, y_ind=2, n_frames=100, **kwargs):
     """
     
     outname = kwargs.get("outname", "animated_hexbin.gif")
+    close = kwargs.get("close", True)
     cmap = kwargs.get("cmap", "viridis")
 
     figsize = kwargs.get("figsize", (10, 10))
@@ -114,6 +115,9 @@ def animated_hexbin_plot(orbits, x_ind=1, y_ind=2, n_frames=100, **kwargs):
 
     ani = animation.FuncAnimation(fig, animate, frames=frames, interval=100)
     ani.save(outname, writer='pillow', fps=24)
+
+    if close:
+        plt.close(fig)
 
 
 def r_vr(orbits, **kwargs):

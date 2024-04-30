@@ -180,6 +180,8 @@ def plot_density(xyz, gridsize=40, outname=None, **kwargs):
     zmax = kwargs.get("zmax", 3)
     cmap = kwargs.get("cmap", "inferno")
 
+    show = kwargs.get("show", True)
+
     x, y, z = xyz
     lim = (-Rmax * 1.1, Rmax * 1.1)
     gridsize_z = int(gridsize * zmax / Rmax)
@@ -204,8 +206,10 @@ def plot_density(xyz, gridsize=40, outname=None, **kwargs):
     
     if outname is not None:
         plt.savefig(outname)
-    else:
+    elif show:
         plt.show()
+    else:
+        return fig, ax
 
 
 def plot_density_3ax(xyz, gridsize=40, outname=None, **kwargs):
@@ -219,6 +223,8 @@ def plot_density_3ax(xyz, gridsize=40, outname=None, **kwargs):
     Rmax = kwargs.get("Rmax", 15)
     zmax = kwargs.get("zmax", 3)
     cmap = kwargs.get("cmap", "inferno")
+
+    show = kwargs.get("show", True)
 
     x, y, z = xyz
     lim = (-Rmax * 1.1, Rmax * 1.1)
@@ -248,9 +254,11 @@ def plot_density_3ax(xyz, gridsize=40, outname=None, **kwargs):
     
     if outname is not None:
         plt.savefig(outname)
-    else:
+    elif show:
         plt.show()
-
+    else:
+        return fig, ax
+    
 
 def pyplot_3D_plot(orbits, nrows=2, ncols=3, **kwargs):
     """ Plots a set of 3D scatter plots of the particle positions in a given OrbitContainer.
