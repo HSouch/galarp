@@ -2,11 +2,13 @@ import numpy as np
 from astropy import units as u
 from matplotlib import pyplot as plt
 
+from scipy.interpolate import interp1d
+
 from . import utils
 
 from .postprocessing import analysis
 
-__all__ = ["UniformShadow", "ExponentialShadow", "EdgeOnShadow", 
+__all__ = ["DynamicShadow",  "UniformShadow", "ExponentialShadow", "EdgeOnShadow", 
            "UniformLinearZVariableShadow", "UniformExponentialZVariableShadow"]
 
 
@@ -368,3 +370,79 @@ class UniformExponentialZVariableShadow(ShadowBase):
         out[out > 1] = 1
 
         return out
+
+
+class DynamicShadow:
+
+    def __init__(self, wind, depth=0.2, **kwargs):
+        self.depth = depth
+        self.wind = wind
+
+        self.y_range = kwargs.get("y_range", (-20, 20))
+        self.z_range = kwargs.get("z_range", (-20, 20))
+        self.n_bins = kwargs.get("n_bins", 20)
+
+
+        self.x_range = kwargs.get("x_range", (-20, 50))
+        self.n_bins_wind_direction = kwargs.get("n_bins_wind_direction", 101)
+
+
+        self.debug = kwargs.get("debug", False)
+
+    def evaluate(self, q, t):
+        """
+        Evaluate the shadowing effect on particles dynamically, by rotating particles to the wind-frame of reference
+        and then computing line-of sight depths.
+
+        NOTE: In the wind frame, the Y-Z plane is what the wind "sees", and the X-axis is the distance along the
+        wind direction.
+
+        Parameters:
+        - q: numpy array, shape (3, N)
+            Array of particle positions.
+        - t: float
+            Time parameter (Redundant for this shadow, but might be useful if we implement a changing wind inclination).
+
+        Returns:
+        - shadowing: numpy array, shape (N,)
+            Array of shadowing values for each particle.
+        """
+
+        # STEP 1: Rotate the particles to the wind frame    
+        xyz_rotated = utils.rotate(q, beta=self.wind.inclination())
+        xyz_rotated_T = xyz_rotated.T
+
+        shadowing = np.ones(len(q[0]))
+
+        # STEP 2: Bin the particles along the y-z axis to get distribution along wind's line of sight
+        # Create bins along the y and z axis
+        y_bins = np.linspace(self.y_range[0], self.y_range[1], self.n_bins + 1)
+        z_bins = np.linspace(self.z_range[0], self.z_range[1], self.n_bins + 1)
+
+        # Bin particles along y-z axis
+        y_bin_indices = np.digitize(xyz_rotated[1], y_bins)
+        z_bin_indices = np.digitize(xyz_rotated[2], z_bins)
+
+        shadow_bins = np.linspace(self.x_range[0], self.x_range[1], self.n_bins_wind_direction)
+
+        # Get particles in the bin, and take only the z component
+        # We take a cumulative sum of the histogram to get the integrated number of particles at each distance
+        for i in range(self.n_bins):
+            for j in range(self.n_bins):
+                
+                # Determine which particles are in this current bin              
+                in_bin = np.bitwise_and(y_bin_indices == i + 1, z_bin_indices == j + 1)
+                particles_in_z_bin = xyz_rotated_T[in_bin].T[0]
+
+
+                # Get a cumulative histogram of the particle x directions and make it into an interp object
+                # NOTE: This might be improved in the future to speed things up, but good for now
+                
+                histsum = np.cumsum(np.histogram(particles_in_z_bin, bins=shadow_bins)[0]) * self.depth
+                interp = interp1d(shadow_bins[:-1], 1 - np.min([histsum, np.ones(len(histsum))], axis=0), 
+                                kind="linear", fill_value=(0, 1), bounds_error=False)
+                
+                # Apply shadowing to the particles in this bin
+                shadowing[in_bin] = interp(xyz_rotated[0][in_bin])
+
+        return shadowing
