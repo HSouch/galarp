@@ -55,8 +55,7 @@ def F_RPS(
 
 
 def F_RPS_Surface_Density(
-    t, w, potential, shadow, wind, rho, sigma_gas, wind_on=True, debug=False
-):
+    t, w, potential, shadow, wind, rho, sigma_gas, wind_on=True, debug=False):
     # position units are in kpc
     # velocity units here are in kpc/Myr
     x, y, z, vx, vy, vz = w
