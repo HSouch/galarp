@@ -7,8 +7,26 @@ which is modelled in ``GalaRP`` with the ``ShadowBase`` class and associated sub
 limiting the ram pressure strength evaluated at various physical positions.
 
 ``GalaRP`` has a large suite of built-in shadow classes for the user to try, which range from shadow strengths that are
-uniform across the shadowed region, to exponential drop-offs, to a shadow that loses strength the higher one goes above
-the disk. It is also easy for the user to define their own subclasses using the ``ShadowBase`` class.
+uniform across the shadowed region, to exponential drop-offs, to a shadow that loses strength the higher a particle 
+goes above the disk. It is also easy for the user to define their own subclasses using the ``ShadowBase`` class.
+
+
+Dynamic Shadow
+--------------
+
+The main shadow the user should apply is the ``DynamicShadow``, which automatically determines the shadow based on the
+particle distributions and the wind. It does this by rotating the particles into the wind's frame of reference, 
+determines sightlines along the wind direction by binning the particles, and then applies a damping for the given 
+particles based on the cumulative distribution along that line of sight.
+
+.. code-block:: python
+
+    shadow = grp.DynamicShadow(wind, depth=0.02, n_bins=20)
+
+
+There are "static shadows" which the remainder of this page covers. These are kept in as simple shadowing prescrptions,
+but many important aspects of a ram pressure event are not replicated using these models. However, they do speed
+up individual simulations, so toy models can use them for simple exercises.
 
 
 Basic Example
