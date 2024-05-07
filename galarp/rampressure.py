@@ -10,6 +10,7 @@ from .postprocessing import utils
 
 # This module
 from . import shadows, winds, densities
+from .satellites import particles as sat_particles
 
 import gala.dynamics as gd
 from gala.units import galactic
@@ -67,11 +68,11 @@ def F_RPS_Surface_Density(
     acc = -potential._gradient(q, _t).T
 
     # Compute acceleration from ram pressure
-    # a_ram = pi * rho * v_perp^2 * r_cloud^2 / m_cloud
+    # a_ram = rho * v_perp^2 / Sigma_cloud
     # TODO remove units altogether
     if wind_on:
         v_perp = p - wind.evaluate(t)
-        a_ram = (rho.evaluate(t) / sigma_gas).to(1 / u.kpc).value * (v_perp**2)
+        a_ram = (v_perp**2) * (rho.evaluate(t) / sigma_gas).to(1 / u.kpc).value[:, np.newaxis]
 
         a_ram = a_ram.T
 
@@ -87,7 +88,7 @@ def F_RPS_Surface_Density(
 
 class RPSim:
     def __init__(
-        self, wind, potential, rho_icm=None, shadow=None, potential_name="", method=F_RPS):
+        self, wind, potential, shadow=None, potential_name="", method=F_RPS):
         self.method = method
 
         self.wind = wind
@@ -96,8 +97,6 @@ class RPSim:
         self.shadow = shadow
 
         self.potential_name = potential_name
-
-        self.rho_icm = rho_icm
 
         self.inclination = wind.inclination()
 
@@ -126,7 +125,9 @@ class RPSim:
         else:
             self.rho_icm = rho_icm
 
-        sigma_gas = sigma_gas
+        print(sigma_gas, len(particles.container))
+        self.sigma_gas = sat_particles.SigmaGas(sigma=sigma_gas, nparticles=len(particles.container)).sigma
+        print(len(self.sigma_gas))
 
         # Allow for user to switch out wind in the run method
         if wind is not None:
@@ -153,7 +154,7 @@ class RPSim:
         if self.method == F_RPS:
             func_args = (self.potential, self.shadow, self.wind, self.rho_icm, r_cloud, m_cloud, wind_on)
         elif self.method == F_RPS_Surface_Density:
-            func_args = (self.potential, self.shadow, self.wind, self.rho_icm, sigma_gas, wind_on)
+            func_args = (self.potential, self.shadow, self.wind, self.rho_icm, self.sigma_gas, wind_on)
 
         integrator = gi.RK5Integrator(
             self.method,
