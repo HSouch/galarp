@@ -34,7 +34,7 @@ def ExampleUniformEvent(inc=45., strength=600.):
     particles = particle_grids.UniformGrid(Rmax= 10, n_particles= 20, z_start= 0.5)
     particles.generate(mass_profile)
 
-    sim = rampressure.RPSim(wind=wind, potential=pot, shadow=shadow, rho_icm=1e-26 * u.g/ u.cm**3)
+    sim = rampressure.RPSim(wind=wind, potential=pot, shadow=shadow)
     orbits = sim.run(particles, rho_icm=1e-26 * u.g/ u.cm**3, integration_time=1000 * u.Myr, dt=2*u.Myr)
     return orbits
 
@@ -57,10 +57,10 @@ def ExampleLorentzianEvent(inc=45, strength=600):
     
     shadow = shadows.UniformShadow()
     shadow.init_from_wind(wind)
-
+    
     particles = particle_grids.UniformGrid(Rmax= 10, n_particles= 20, z_start= 0.5)
     particles.generate(mass_profile)
 
-    sim = rampressure.RPSim(wind=wind, potential=pot, shadow=shadow, rho_icm=1e-26 * u.g/ u.cm**3)
+    sim = rampressure.RPSim(wind=wind, potential=pot, shadow=shadow)
     orbits = sim.run(particles, rho_icm=1e-26 * u.g/ u.cm**3, integration_time=1000 * u.Myr, dt=2*u.Myr)
     return orbits
