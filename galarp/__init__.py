@@ -10,5 +10,6 @@ from . import builtins
 
 from .hosts import *
 from .postprocessing import *
+from .satellites import *
 
 __version__ = "0.0.5"
