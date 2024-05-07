@@ -21,7 +21,7 @@ class TestRPSim:
         sim.run(particles=self.particles)
 
     def test_sim_with_density(self):
-        sim = grp.RPSim(wind=self.wind, potential=self.potential, rho_icm=self.density)
-        sim.run(particles=self.particles)
+        sim = grp.RPSim(wind=self.wind, potential=self.potential)
+        sim.run(particles=self.particles, rho_icm=self.density)
         
         
