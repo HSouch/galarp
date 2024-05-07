@@ -175,3 +175,112 @@ def r_vr(orbits, **kwargs):
     
     ani = animation.FuncAnimation(fig, animate, frames=n_frames, interval=100)
     ani.save(outname, writer='pillow', fps=24)
+
+
+def dynamic_shadow_animated_plot(orbits, shadow, **kwargs):
+    """
+    Create an animated plot showing the effects of a given dynamic shadow on a GalaRP orbit container.
+
+    Parameters:
+    - orbits: An object representing the orbits.
+    - shadow: An object representing the shadow.
+    - **kwargs: Additional keyword arguments for customization.
+
+    Keyword Arguments:
+    - figsize: Tuple specifying the figure size. Default is (10, 10).
+    - outname: String specifying the output filename. Default is "animated_hexbin.gif".
+    - close: Boolean indicating whether to close the figure after saving the animation. Default is True.
+    - gridsize: Integer specifying the grid size for hexbin plots. Default is 50.
+    - xextent: Tuple or float specifying the x-axis extent. Default is (-40., 40.).
+    - yextent: Tuple or float specifying the y-axis extent. Default is (-40., 40.).
+    - imax: Integer specifying the maximum index of the orbits data. Default is len(orbits.data.t) - 1.
+    - vmin: Float specifying the minimum value (of particles) for color mapping. Default is 1.
+    - vmax: Float specifying the maximum value (of particles) for color mapping. Default is 500.
+    - n_frames: Integer specifying the number of frames for the animation. Default is 100.
+
+    Returns:
+    - None
+    """
+    x,y,z, *_ = orbits.get_orbit_data(orbits.data, transposed=False)
+
+    fig, ax = plt.subplots(2, 2, figsize=kwargs.get("figsize", (10, 10)))
+
+    outname = kwargs.get("outname", "animated_hexbin.gif")
+    close = kwargs.get("close", True)
+
+    gridsize = kwargs.get("gridsize", 50)
+    xextent = kwargs.get("xextent", (-40., 40.))
+    xextent = (-xextent, xextent) if isinstance(xextent, (int, float)) else xextent
+    yextent = kwargs.get("yextent", (-40., 40.))
+    yextent = (-yextent, yextent) if isinstance(yextent, (int, float)) else yextent
+
+    imax = kwargs.get("imax", len(orbits.data.t) - 1)
+
+    vmin, vmax = kwargs.get("vmin", 1), kwargs.get("vmax", 500)
+
+    n_frames = min(kwargs.get("n_frames", 100), imax)
+
+    frames = np.linspace(0, imax, n_frames).astype(int)
+
+
+    def add_labels(ax):
+        ax[0][0].set(ylabel="Y [kpc]", xlim=xextent, ylim=xextent)
+        ax[1][0].set(xlabel="Y [kpc]", ylabel="Z [kpc]", xlim=xextent, ylim=yextent)
+
+
+    cmaps = ["Greys", "Blues", "Greens", "Reds"]
+    colors = ["Grey", "Blue", "Green", "Red"]
+    damped = [1.0, 0.9, 0.5, 0.1]
+
+    bins = np.linspace(-0.1, 1.1, 23)
+
+    def animate(i):
+        this_x, this_y, this_z = x[i], y[i], z[i]
+
+        this_damping = shadow.evaluate(np.array([this_x, this_y, this_z]).T, 0)
+        hist, bin_edges = np.histogram(this_damping, bins=bins)
+
+        for axis in ax.flatten()[:]:
+            axis.cla()
+
+        ax[1][1].stairs(hist, bin_edges, color="black", lw=2)
+
+        xlims = ax[1][1].get_xlim()
+        ylims = ax[1][1].get_ylim()
+        dx, dy = xlims[1] - xlims[0], ylims[1] - ylims[0]
+        current_time = orbits.data.t[i].value
+
+        ax[1][1].text(xlims[1] - dx /2, ylims[1] - dy / 10,  f"Time: {current_time:.0f} Myr", ha="left")
+
+        for i in range(len(damped)):
+            this_x_damped = this_x[this_damping < damped[i]]
+            this_y_damped = this_y[this_damping < damped[i]]
+            this_z_damped = this_z[this_damping < damped[i]]
+
+            ax[0][0].hexbin(this_x_damped, this_y_damped, bins="log", cmap=cmaps[i], gridsize=(gridsize, gridsize),
+                            extent=[*xextent, *xextent], 
+                            vmin=vmin, vmax=vmax, zorder = i + 5)
+            
+            ax[0][1].hexbin(this_x_damped, this_z_damped, bins="log", cmap=cmaps[i], gridsize=(gridsize, gridsize),
+                            extent=[*xextent, *yextent], 
+                            vmin=vmin, vmax=vmax, zorder = i + 5)
+            ax[1][0].hexbin(this_y_damped, this_z_damped, bins="log", cmap=cmaps[i], gridsize=(gridsize, gridsize),
+                            extent=[*xextent, *yextent], 
+                            vmin=vmin, vmax=vmax, zorder = i + 5)
+
+
+            ax[1][1].text(xlims[1] - dx/2,
+                          ylims[1] - (i + 2) * dy / 10, 
+                          f"d < {damped[i]}: {len(this_x_damped)}", 
+                          ha="left", color=colors[i])
+
+        add_labels(ax)
+
+    animate(0)
+    plt.tight_layout()
+    
+    ani = animation.FuncAnimation(fig, animate, frames=frames, interval=100)
+    ani.save(outname, writer='pillow', fps=24)
+
+    if close:
+        plt.close(fig)
