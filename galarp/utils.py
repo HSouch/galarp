@@ -12,7 +12,8 @@ from scipy.interpolate import interp1d
 import pickle
 
 
-__all__ = ['v_circ', 'velocity', 'gen_mass_profile', 'm0', 'get_orbit_data', 'pickle_obj', 'Rvir', 'R100', 'R500', 'rotate']
+__all__ = ['v_circ', 'velocity', 'gen_mass_profile', 'm0', 'get_orbit_data', 'pickle_obj', 'Rvir', 'R100', 'R500',
+           'rotate', 'rotate_yaxis']
 
 
 #############################################
@@ -114,5 +115,23 @@ def rotate(vec, alpha=np.deg2rad(0), beta=np.deg2rad(0), gamma=np.deg2rad(0)):
     rot_matrix_2 = [np.cos(beta)*np.sin(gamma), np.sin(alpha)*np.sin(beta)*np.sin(gamma) + np.cos(alpha)*np.cos(gamma),
                      np.cos(alpha)*np.sin(beta)*np.sin(gamma) - np.sin(alpha)*np.cos(gamma)]
     rot_matrix_3 = [-np.sin(beta), np.sin(alpha)*np.cos(beta), np.cos(alpha)*np.cos(beta)]
+    rot_matrix = np.array([rot_matrix_1, rot_matrix_2, rot_matrix_3])
+    return np.dot(rot_matrix, vec)
+
+
+def rotate_yaxis(vec, beta=np.deg2rad(0)):
+    """ Rotate a set of positions by the given angles
+
+    Args:
+        vec (array_like): Array of positions to rotate 
+        beta (float): Rotation angle about the y-axis
+
+    Returns:
+        _type_: _description_
+    """
+
+    rot_matrix_1 = [np.cos(beta), 0, np.sin(beta)]
+    rot_matrix_2 = [0, 1, 0]
+    rot_matrix_3 = [-np.sin(beta), 0, np.cos(beta)]
     rot_matrix = np.array([rot_matrix_1, rot_matrix_2, rot_matrix_3])
     return np.dot(rot_matrix, vec)
