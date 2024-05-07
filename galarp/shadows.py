@@ -378,6 +378,8 @@ class DynamicShadow:
         self.depth = depth
         self.wind = wind
 
+        self.shadow_name = "Dynamic"
+
         self.y_range = kwargs.get("y_range", (-20, 20))
         self.z_range = kwargs.get("z_range", (-20, 20))
         self.n_bins = kwargs.get("n_bins", 20)
@@ -407,6 +409,8 @@ class DynamicShadow:
         - shadowing: numpy array, shape (N,)
             Array of shadowing values for each particle.
         """
+
+        q = q.T
 
         # STEP 1: Rotate the particles to the wind frame    
         xyz_rotated = utils.rotate(q, beta=self.wind.inclination())
@@ -446,3 +450,31 @@ class DynamicShadow:
                 shadowing[in_bin] = interp(xyz_rotated[0][in_bin])
 
         return shadowing
+
+    def debug_evaluate(self, q, t, **kwargs):
+        shadowing = self.evaluate(q, t)
+
+        size = kwargs.get("size", 1)
+
+        outname = kwargs.get("outname", None)
+        cmap = kwargs.get("cmap", "magma")
+
+        fig, ax = plt.subplots(1, 3, figsize=(12, 5))
+
+        m1 = ax[0].scatter(q[0], q[1], c=shadowing, cmap=cmap, s=size)
+        ax[0].set(xlabel="X [kpc]", ylabel="Y [kpc]", xlim=(-20, 20), ylim=(-20, 20))
+
+        m2 = ax[1].scatter(q[0], q[2], c=shadowing, cmap=cmap, s=size)
+        ax[1].set(xlabel="X [kpc]", ylabel="Z [kpc]", xlim=(-20, 20), ylim=(-20, 20))
+
+        m3 = ax[2].scatter(q[1], q[2], c=shadowing, cmap=cmap, s=size)
+        ax[2].set(xlabel="Y [kpc]", ylabel="Z [kpc]", xlim=(-20, 20), ylim=(-20, 20))
+
+        plt.colorbar(mappable=m1, ax=ax[0], label="Wind Strength", orientation="horizontal", location="top")
+        plt.colorbar(mappable=m2, ax=ax[1], label="Wind Strength", orientation="horizontal", location="top")
+        plt.colorbar(mappable=m3, ax=ax[2], label="Wind Strength", orientation="horizontal", location="top")
+
+        plt.tight_layout()
+        if outname is not None:
+            plt.savefig(outname, dpi=kwargs.get("dpi", 200))
+            plt.close()
