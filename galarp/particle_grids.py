@@ -11,17 +11,21 @@ from tqdm import tqdm
 
 
 __all__ = [
-    "ParticleGrid",
+    "ParticleSet",
     "UniformGrid",
     "ExponentialGrid",
     "generate_exponential_positions",
 ]
 
 
-class ParticleGrid:
+class ParticleSet:
     def __init__(self, name="PG"):
         self.container = []  # List of PhaseSpacePosition objects
         self.name = name
+
+        self.masses = None
+        self.sigmas = None
+        self.radii = None
 
     def generate(self):
         raise NotImplementedError(
@@ -89,7 +93,7 @@ class ParticleGrid:
         utils.pickle_obj(self.container, outname)
 
 
-class UniformGrid(ParticleGrid):
+class UniformGrid(ParticleSet):
     """Class to initialize a grid of particles in the xy plane with circular
     velocities based on a given gravitational potential.
 
@@ -101,7 +105,8 @@ class UniformGrid(ParticleGrid):
         ```
     """
 
-    def __init__(self, Rmax=10, n_particles=50, z_start=0.0, veldisp=10.0):
+    def __init__(self, Rmax=10, n_particles=50, z_start=0.0, veldisp=10.0, 
+                 masses=None, sigmas=None, radii=None):
         """Generate a grid of particles in the xy plane with circular
             velocities based on a given gravitational potential.
             Can also include a Gaussian velocity dispersion (helpful for
@@ -126,6 +131,10 @@ class UniformGrid(ParticleGrid):
         self.n_particles = n_particles
         self.z_start = z_start
         self.veldisp = veldisp
+
+        self.masses = masses
+        self.sigmas = sigmas
+        self.radii = radii
 
     def generate(self, mass_profile, velocities=True):
         particle_range = np.linspace(-self.Rmax, self.Rmax, self.n_particles) * u.kpc
@@ -154,16 +163,9 @@ class UniformGrid(ParticleGrid):
                 self.container.append(w0)
 
 
-class ExponentialGrid(ParticleGrid):
-    def __init__(
-        self,
-        h_R=4 * u.kpc,
-        h_z=0.5 * u.kpc,
-        n_particles=500,
-        veldisp=10.0 * u.km / u.s,
-        Rmax=None,
-        zmax=None,
-    ):
+class ExponentialGrid(ParticleSet):
+    def __init__(self, h_R=4 * u.kpc, h_z=0.5 * u.kpc, n_particles=500, veldisp=10.0 * u.km / u.s,
+        Rmax=None, zmax=None, masses=None, sigmas=None, radii=None):
         super().__init__(name="EG")
 
         self.h_R = h_R
@@ -174,6 +176,10 @@ class ExponentialGrid(ParticleGrid):
 
         self.n_particles = n_particles
         self.veldisp = veldisp
+
+        self.masses = masses
+        self.sigmas = sigmas
+        self.radii = radii
 
     def generate(self, mass_profile, velocities=True, positions=None):
         if positions is None:  # Generate positions if nothing given
