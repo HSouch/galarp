@@ -271,7 +271,7 @@ class OrbitContainer:
             )
 
     def save(self, fn):
-        """ Pickle the OrbitContainer. """
+        """ Pickle the OrbitContainer to filename fn. """
         with open(fn, "wb") as f:
             pickle.dump(self, f)
 
