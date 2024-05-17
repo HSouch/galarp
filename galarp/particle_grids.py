@@ -28,10 +28,7 @@ class ParticleSet:
         self.radii = None
 
     def generate(self):
-        raise NotImplementedError(
-            "This is an abstract class. Please use a \
-            subclass."
-        )
+        raise NotImplementedError("This is an abstract class. Please use a subclass.")
 
     def plot_phase_space(self, ax=None, color="black", outname=None):
         if ax is None:
