@@ -8,159 +8,161 @@ from gala.units import galactic
 
 from scipy.interpolate import interp1d
 
+import warnings
 
 
-__all__ = [
-    "RPWind",
-    "LorentzianWind",
-    "StepFunctionWind",
-    "InterpolatedWind",
-]
 
 
 class RPWind:
-    """Class to represent a ram pressure wind
+    """ Base class for ram pressure winds.
 
-    Usage:
-        ```
-        wind = gn.RPWind([50, 0, 50] * (u.km / u.s), units=gn.galactic)  # Initializes a wind at 45 degrees in the x-z plane.
+    This class represents a base class for ram pressure winds. It provides methods to initialize the wind properties,
+    evaluate the wind at a given time, update the wind properties, and provide a string representation of the wind.
 
-        wind = gn.RPWind(units=galactic)                                 # Achieves the same thing.
-        wind.init_from_inc(np.deg2rad(45), 100 * u.km  / u.s)
-        ```
+    Parameters:
+        inclination (float): The inclination angle of the wind in radians.
+        strength (Quantity or float): The strength of the wind. If a Quantity object is provided, it should have units of length/time.
+            If a float is provided, it is assumed to be in units of length/time.
+        units (dict, optional): A dictionary containing the units for length and time. If not provided, default galactic units are used.
+        **kwargs: Additional keyword arguments.
+
+    Attributes:
+        units (dict): A dictionary containing the units for length and time.
+        inclination (float): The inclination angle of the wind in radians.
+        strength (Quantity): The strength of the wind in units of length/time.
+        unit_vector (ndarray): A numpy array representing the unit vector of the wind direction.
+
+    Methods:
+        evaluate(t): Evaluates the wind at a given time.
+        evaluate_arr(ts): Evaluates the wind at multiple times.
+        update(inclination, strength): Updates the wind properties.
+        __repr__(): Returns a string representation of the wind.
+
     """
 
-    def __init__(self, vector=None, units=None, **kwargs):
-        """
-        Args:
-            vector (astropy Quantity, optional): Wind vector. Can also be initialized using self.init_from_inc(). Defaults to None.
-            units (_type_, optional): _description_. Defaults to None.
-        """
-        if vector is None:
-            self.vector = Quantity([0, 0, 0]) * (u.km / u.s)
-        # self.vector = Quantity(vector)
+    def __init__(self, inclination=0, strength=800 * u.km / u.s, units=None, **kwargs):
+        self.units = galactic if units is None else units
+        self.inclination = inclination
 
-        self.units = units
-        if self.units is not None:
-            if type(self.vector) == Quantity:
-                self.vector = self.vector.to(self.units["length"] / self.units["time"])
-            else:
-                self.vector *= self.units["length"] / self.units["time"]
+        if isinstance(strength, (u.Quantity)):
+            self.strength = strength.to(self.units["length"] / self.units["time"])
+        else:
+            self.strength = strength * self.units["length"] / self.units["time"]
+
+        if self.strength > 5 * u.kpc / u.Myr:
+            warnings.warn(f"The wind strength ({self.strength}) is quite high. Are your units correct?")
+
+        self.unit_vector = np.array([np.cos(self.inclination), 0, np.sin(self.inclination)])
 
     def evaluate(self, t):
-        """Return the wind vector at time t. For the default wind vector, this is JUST the vector converted to kpc/Myr"""
-        return self.vector.to(u.kpc / u.Myr).value
+        return NotImplementedError("This method must be implemented by the subclass")
     
     def evaluate_arr(self, ts):
         try:
-            return np.array([self.evaluate(t) for t in ts.value])
-        except Exception:
             return np.array([self.evaluate(t) for t in ts])
+        except Exception:
+            return np.array([self.evaluate(t) for t in ts.value])
+        
+    def update(self, inclination=None, strength=None):
+        if inclination is not None:
+            self.inclination = inclination
+            self.unit_vector = np.array([np.cos(self.inclination), 0, np.sin(self.inclination)])
+        if strength is not None:
+            self.strength = strength
 
-    def initialize_vector(self):
-        if self.units is not None:
-            self.vector = self.vector.to(self.units["length"] / self.units["time"])
-
-    def init_from_inc(self, inclination, strength):
-        """Initialize the wind vector from an inclination and strength"""
-
-        x = strength * np.cos(inclination)
-        z = strength * np.sin(inclination)
-        self.vector = Quantity([x, 0 * x.unit, z]).to(
-            self.units["length"] / self.units["time"]
-        )
-
-    def wind_strength(self):
-        """Return the length (strength) of the wind vector"""
-        return np.sqrt(sum(self.vector**2))
-
-    def normalized(self):
-        """Return the normalized wind vector"""
-        return self.vector / self.wind_strength()
-
-    def vector_to_units(self, units):
-        return self.vector.to(units)
-
-    def vector_as_value(self):
-        if type(self.vector) == Quantity:
-            return self.vector.value
-        else:
-            return self.vector
-
-    def inclination(self):
-        x, y, z = self.vector_as_value()
-        return np.arctan2(z, np.sqrt(x**2 + y**2))
-
-    def __repr__(self):
-        return f"<RP Wind Vector={self.vector}  Inclination={np.round(np.rad2deg(self.inclination()), 2):.2f}  >"
-
-
-class LorentzianWind(RPWind):
-    """Ram pressure wind that is damped by a Lorentzian profile.
-        Reaches max (which is just the unadjusted RP wind value) at t0.
-
-    Args:
-        gn (_type_): _description_
-    """
-
-    def __init__(self, t0=0 * u.Myr, width=200 * u.Myr, **kwargs):
-        super().__init__(**kwargs)
-        self.t0 = t0.to(u.Myr).value  # Units are in Myr
-        self.width = width.to(u.Myr).value  # Units are in Myr
-
-    def evaluate(self, t):
-        """Return the wind vector damped by a Lorentzian profile"""
-        return super().evaluate(t) * 1 / ((2 * (t - self.t0) / self.width) ** 2 + 1)
-
-
-class StepFunctionWind(RPWind):
-    """A wind represented by a step function (no wind immediately into full wind at time t0)
-    Good for testing that time variability is working.
-
-    """
-
-    def __init__(self, t0=0 * u.Myr, **kwargs):
-        super().__init__(**kwargs)
-        self.t0 = t0.to(u.Myr).value
-
-    def evaluate(self, t):
-        factor = t > self.t0
-        return super().evaluate(t) * factor
+    def __repr__(self) -> str:
+        return f'<RP Wind Vector: Inc={np.rad2deg(self.inclination)}>'
     
 
-class InterpolatedWind(RPWind):
-    """Wind that is interpolated from a table of values. """
 
-    def __init__(self, interp=None, units=galactic, **kwargs):
+class ConstantWind(RPWind):
+
+    def evaluate(self, t):
+        return self.unit_vector * self.strength.value
+
+
+class LorentzianWind(ConstantWind):
+    """ A ram pressure wind shaped by the Lorentzian profile, which is a popular profile for winds for a 
+        galaxy orbiting through a cluster.
+
+    """
+    def __init__(self, t0=200 * u.Myr, width=200 * u.Myr, **kwargs):
         """
-            Args:
-                interp (callable): Interpolation function that takes a time value as input and returns the wind velocity at that time.
-                units (dict, optional): Dictionary specifying the units of the wind vector. Defaults to galactic units.
-                inc (float, optional): Inclination angle of the wind vector in radians. Defaults to 0.
-            """
+            Parameters:
+            - t0 (Quantity): The time at peak wind strength. Default is 200 Myr.
+            - width (Quantity): The width of the Lorentzian profile. Default is 200 Myr.
+        """
+        super().__init__(**kwargs)
+        
+        self.t0 = t0.to(self.units["time"])
+        self.width = width.to(self.units["time"])
+    
+    def evaluate(self, t):
+
+        return super().evaluate(t) * 1 / ((2 * (t - self.t0.value) / self.width.value) ** 2 + 1)
+    
+
+class StepFunctionWind(ConstantWind):
+    """ Representation of a "step function wind" where the wind turns on at the time t0.
+        Useful for testing that time variability is working, or for allowing the particles to evolve in
+        isolation before a constant wind hits.
+
+    """
+    def __init__(self, t0= 100 * u.Myr, **kwargs):
+        """
+            Parameters:
+            - t0 (Quantity): The time at which the wind turns on. Default is 100 Myr.
+        """
+        super().__init__(**kwargs)
+        self.t0 = t0.to(self.units["time"])
+    
+    def evaluate(self, t):
+        return super().evaluate(t) * (t > self.t0)
+
+
+class InterpolatedStrengthWind(RPWind):
+    """
+    A class representing an interpolated wind with strength.
+
+    This class extends the RPWind class and provides methods to evaluate the wind strength at a given time.
+
+    Attributes:
+    - interp (callable): The interpolation function used to evaluate the wind strength.
+
+    Methods:
+    - __init__(self, interp=None, **kwargs): Initializes an InterpolatedStrengthWind object.
+    - evaluate(self, t): Evaluates the wind strength at a given time.
+    - from_table(fn, t_key, vel_keys, format="ascii", t_units=u.s, v_units=u.cm/u.s, verbose=False, **kwargs): 
+      Creates an InterpolatedStrengthWind object from an input data table.
+
+    Usage:
+    >>> wind = InterpolatedStrengthWind.from_table("wind_data.txt", "time", 
+        ["velocity_x", "velocity_y", "velocity_z"], units=galactic, inc=np.deg2rad(45))
+    >>> print(wind.evaluate(10 * u.Myr))
+    """
+
+    def __init__(self, interp=None, **kwargs):
         super().__init__(**kwargs)
         self.interp = interp
-        self.inc = kwargs.get("inc", 0)
 
-        self.unit_vector = [np.cos(self.inc), 0, np.sin(self.inc)]
-    
     def evaluate(self, t):
-        """ Evaluate the wind vector at a given time by multiplying the unit vector by the interpolated
-            wind strength at that time.
+        """
+        Evaluates the wind strength at a given time.
+
+        Parameters:
+        - t: The time at which to evaluate the wind strength.
+
+        Returns:
+        - The wind strength at the given time.
         """
         return self.unit_vector * self.interp(t)
     
-
-    def inclination(self, t=0):
-        return self.inc
-
-
     @staticmethod
     def from_table(fn, t_key, vel_keys, format="ascii",
-                   t_units = u.s, v_units = u.cm / u.s, 
+                   t_units=u.s, v_units=u.cm/u.s,
                    verbose=False, **kwargs):
         """
-        Create an InterpolatedWind object from a table.
+        Create an InterpolatedStrengthWind object from a table.
 
         Parameters:
         - fn (str): The filename of the table.
@@ -181,17 +183,20 @@ class InterpolatedWind(RPWind):
         """
         t = Table.read(fn, format=format)
 
+        units = kwargs.get("units", galactic)
+
         if verbose:
             print(f'Loaded table with {len(t)} rows and keys: {t.keys()}')
+        
+        ts = t[t_key] * t_units.to(units["time"])
 
-        ts = t[t_key] * t_units.to(u.Myr)
-
-        if not isinstance(vel_keys, list): 
+        if not isinstance(vel_keys, list):
             vel_keys = [vel_keys]
-
+        
         vels = np.array([t[key] for key in vel_keys])
-        v_tot = np.sqrt(np.sum(vels**2, axis=0)) * v_units.to(u.kpc/u.Myr)
 
-        interp = interp1d(ts, v_tot, bounds_error=False, fill_value="extrapolate")
+        vel_tot = np.sqrt(np.sum(vels ** 2, axis=0)) * v_units.to(units["length"] / units["time"])
 
-        return InterpolatedWind(interp=interp, **kwargs)
+        interp = interp1d(ts, vel_tot, bounds_error=False, fill_value="extrapolate")
+
+        return InterpolatedStrengthWind(interp=interp, **kwargs)
