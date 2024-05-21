@@ -98,11 +98,6 @@ class RPSim:
 
         self.potential_name = potential_name
 
-        self.inclination = wind.inclination()
-
-        if (np.rad2deg(self.inclination) < 10 and type(self.shadow) != shadows.EdgeOnShadow):
-            print( "Warning: Inclination is less than 10 degrees. You should be using an EdgeOnShadow." )
-
         self.sim_results = []
 
     def run(
