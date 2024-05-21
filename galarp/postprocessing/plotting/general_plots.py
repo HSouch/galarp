@@ -212,7 +212,7 @@ def plot_density(xyz, gridsize=40, outname=None, **kwargs):
         return fig, ax
 
 
-def plot_density_3ax(xyz, gridsize=40, outname=None, **kwargs):
+def plot_density_3ax(orbits, gridsize=40, outname=None, **kwargs):
     """ Generate hexbin plots for all 3 principle axes of the particle densities.
 
     Args:
@@ -225,8 +225,8 @@ def plot_density_3ax(xyz, gridsize=40, outname=None, **kwargs):
     cmap = kwargs.get("cmap", "inferno")
 
     show = kwargs.get("show", True)
+    x,y,z, *_ = orbits.get_orbit_data(transposed=False)
 
-    x, y, z = xyz
     lim = (-Rmax * 1.1, Rmax * 1.1)
     gridsize_z = int(gridsize * zmax / Rmax)
 
