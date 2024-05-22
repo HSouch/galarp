@@ -120,9 +120,7 @@ class RPSim:
         else:
             self.rho_icm = rho_icm
 
-        print(sigma_gas, len(particles.container))
         self.sigma_gas = sat_particles.SigmaGas(sigma=sigma_gas, nparticles=len(particles.container)).sigma
-        print(len(self.sigma_gas))
 
         # Allow for user to switch out wind in the run method
         if wind is not None:
@@ -131,7 +129,7 @@ class RPSim:
         if printout:
             printout_width = 80
             print("".center(printout_width, "-"))
-            print(f" Running GALA sim with  {self.wind.wind_strength():.2e}  wind at  {self.wind.inclination():.2f}  degrees ".center(
+            print(f" Running GALA sim with  {self.wind.strength:.2e}  wind at  {self.wind.inclination:.2f}  degrees ".center(
                     printout_width, "-"))
             print(f" Running for {integration_time}  at a timestep of  {dt}  ({integration_time / dt:.1f} steps) ".center(
                     printout_width, "-"))
