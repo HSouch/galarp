@@ -4,7 +4,7 @@ from scipy.interpolate import interp1d
 from gala.units import galactic
 from astropy import units as u
 
-from ..winds import InterpolatedWind
+from ..winds import InterpolatedStrengthWind
 
 
 
@@ -19,6 +19,6 @@ def RB2006_Wind(inc = 45, peak = 800):
 
     interp = interp1d(i_x, i_y, bounds_error=False, fill_value="extrapolate")
 
-    wind = InterpolatedWind(interp=interp, inc=np.deg2rad(inc), units=galactic)
+    wind = InterpolatedStrengthWind(interp=interp, inclination=np.deg2rad(inc), units=galactic)
 
     return wind
