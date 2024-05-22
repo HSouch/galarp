@@ -10,6 +10,7 @@ from scipy.interpolate import interp1d
 
 import warnings
 
+__all__ = ["RPWind", "ConstantWind", "LorentzianWind", "StepFunctionWind", "InterpolatedStrengthWind"]
 
 
 
@@ -52,7 +53,7 @@ class RPWind:
         if self.strength > 5 * u.kpc / u.Myr:
             warnings.warn(f"The wind strength ({self.strength}) is quite high. Are your units correct?")
 
-        self.unit_vector = np.array([np.cos(self.inclination), 0, np.sin(self.inclination)])
+        self.unit_vector = np.array([np.sin(self.inclination), 0, np.cos(self.inclination)])
 
     def evaluate(self, t):
         return NotImplementedError("This method must be implemented by the subclass")
@@ -66,7 +67,7 @@ class RPWind:
     def update(self, inclination=None, strength=None):
         if inclination is not None:
             self.inclination = inclination
-            self.unit_vector = np.array([np.cos(self.inclination), 0, np.sin(self.inclination)])
+            self.unit_vector = np.array([np.sin(self.inclination), 0, np.cos(self.inclination)])
         if strength is not None:
             self.strength = strength
 
