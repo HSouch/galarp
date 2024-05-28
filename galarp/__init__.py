@@ -1,5 +1,5 @@
 from .densities import *            # Density classes
-from .particle_grids import *       # ParticleGrid class
+from .particles import *       # ParticleGrid class
 from .rampressure import *          # RPS classes and functions
 from .shadows import *              # Shadow classes and functions
 from .tests import *                # Testing utilities
