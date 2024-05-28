@@ -60,7 +60,7 @@ class ShadowBase:
         Parameters:
         - wind (Wind): The wind object from which to initialize the shadow.
         """
-        self.phi = wind.inclination()
+        self.phi = wind.inclination
 
     def plot_shadow(
         self, ax=None, wind=None, color="black", outname=None, x0=0, y0=0, z0=0
