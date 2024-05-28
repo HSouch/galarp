@@ -26,15 +26,16 @@ class ParticleDistribution:
     def generate(self, **kwargs):
         raise NotImplementedError("This method must be implemented in a subclass.")
     
-    def save_positions(self, outname="positions.npy"):
-        np.save(outname, np.array([self.x, self.y, self.z]))
     
     def plot_positions(self, **kwargs):
         general_plots.plot_density([self.x, self.y, self.z], **kwargs)
 
     def save(self, outname):
         utils.pickle_obj(self, outname)
-
+    
+    def save_positions(self, outname="positions.npy"):
+        np.save(outname, np.array([self.x, self.y, self.z]))
+    
     @staticmethod
     def from_file(filename, **kwargs):
         x, y, z = np.load(filename)
@@ -92,7 +93,7 @@ class ExponentialDistribution(ParticleDistribution):
 
     def generate(self, **kwargs):
         max_tries = kwargs.get("max_tries", 1000)
-        for p_i in range(self.n_particles):
+        for p_i in tqdm(range(self.n_particles), desc="Generating particles"):
             good = False
             while not good:
                 rand_R, rand_z = np.random.uniform(0, self.Rmax), np.random.uniform(-self.zmax, self.zmax)
@@ -122,7 +123,7 @@ class HernquistDistribution(ParticleDistribution):
     
     def generate(self, **kwargs):
         max_tries = kwargs.get("max_tries", 1000)
-        for p_i in range(self.n_particles):
+        for p_i in tqdm(range(self.n_particles), desc="Generating particles"):
             good = False
             while not good:
                 rand_R = np.random.uniform(0, self.Rmax)
