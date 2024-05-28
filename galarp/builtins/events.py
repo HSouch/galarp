@@ -4,9 +4,9 @@ import numpy as np
 
 from ..utils import gen_mass_profile
 
-from .. import builtins
+from .. import builtins, particles
 
-from .. import winds, particle_grids, shadows, rampressure
+from .. import winds, shadows, rampressure
 
 
 __all__ = ['ExampleUniformEvent', 'ExampleLorentzianEvent']
@@ -31,7 +31,7 @@ def ExampleUniformEvent(inc=45., strength=600.):
     shadow = shadows.UniformShadow()
     shadow.init_from_wind(wind)
 
-    particles = particle_grids.UniformGrid(Rmax= 10, n_particles= 20, z_start= 0.5)
+    particles = particles.UniformGrid(Rmax= 10, n_particles= 20, z_start= 0.5)
     particles.generate(mass_profile)
 
     sim = rampressure.RPSim(wind=wind, potential=pot, shadow=shadow)
@@ -58,7 +58,7 @@ def ExampleLorentzianEvent(inc=45, strength=600):
     shadow = shadows.UniformShadow()
     shadow.init_from_wind(wind)
     
-    particles = particle_grids.UniformGrid(Rmax= 10, n_particles= 20, z_start= 0.5)
+    particles = particles.UniformGrid(Rmax= 10, n_particles= 20, z_start= 0.5)
     particles.generate(mass_profile)
 
     sim = rampressure.RPSim(wind=wind, potential=pot, shadow=shadow)

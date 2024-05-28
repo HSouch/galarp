@@ -1,5 +1,5 @@
 from .helpers import ParticleGridTestBase
-from .. import particle_grids as pgrids
+from .. import particles as pgrids
 
 from ..builtins.satellites import JZ2023_Satellite
 from ..utils import gen_mass_profile
