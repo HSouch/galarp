@@ -10,6 +10,7 @@ from . import utils
 
 from tqdm import tqdm
 
+import os
 
 __all__ = ['ParticleDistribution', 'PlaneDistribution', 
            'ExponentialDistribution', 'HernquistDistribution', 
@@ -31,9 +32,17 @@ class ParticleDistribution:
         general_plots.plot_density([self.x, self.y, self.z], **kwargs)
 
     def save(self, outname):
+        outdir = os.path.dirname(outname)
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)
+
         utils.pickle_obj(self, outname)
     
     def save_positions(self, outname="positions.npy"):
+        outdir = os.path.dirname(outname)
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)
+
         np.save(outname, np.array([self.x, self.y, self.z]))
     
     @staticmethod
@@ -41,7 +50,7 @@ class ParticleDistribution:
         x, y, z = np.load(filename)
 
         pd = ParticleDistribution(gen_positions=False, **kwargs)
-        pd.x, pd.y, pd.z = x, y, z
+        pd.x, pd.y, pd.z = x * pd.units["length"], y * pd.units["length"], z * pd.units["length"]
         pd.n_particles = len(x)
 
         return pd
@@ -158,12 +167,11 @@ class ParticleSet:
             mass_profile (_type_): _description_
             velocity_dispersion (_type_, optional): Velocity dispersion is created using a . Defaults to 0*u.km/u.s.
         """
-        px, py, pz = np.array(self.particles.x), np.array(self.particles.y), np.array(self.particles.z)
+        px, py, pz = self.particles.x, self.particles.y, self.particles.z
         assert len(px) == len(py) == len(pz)
 
-        R = np.sqrt(px**2 + py**2) * self.units["length"]
+        R = np.sqrt(px**2 + py**2) #* self.units["length"]
         incs = np.arctan2(pz, R)
-
         theta = np.arctan2(py, px)
 
         for i in range(len(R)):
