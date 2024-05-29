@@ -40,8 +40,8 @@ def F_RPS(
     # a_ram = pi * rho * v_perp^2 * r_cloud^2 / m_cloud
     # TODO remove units altogether
     if wind_on:
-        v_perp = p - wind.evaluate(t)
-        a_ram = (np.pi * rho.evaluate(t) * r_cloud**2 / m_cloud).to(1 / u.kpc).value * (v_perp**2)
+        v_perp = wind.evaluate(t) - p
+        a_ram = (np.pi * rho.evaluate(t) * r_cloud**2 / m_cloud).to(1 / u.kpc).value * (v_perp**2) * np.sign(v_perp)
 
         a_ram = a_ram.T
 
