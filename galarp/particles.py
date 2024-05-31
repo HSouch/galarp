@@ -27,7 +27,6 @@ class ParticleDistribution:
     def generate(self, **kwargs):
         raise NotImplementedError("This method must be implemented in a subclass.")
     
-    
     def plot_positions(self, **kwargs):
         general_plots.plot_density([self.x, self.y, self.z], **kwargs)
 

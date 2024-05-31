@@ -47,7 +47,7 @@ def F_RPS(
 
         # If wind is on and shadow exists, apply shadow to appropriate particles
         if shadow is not None:
-            shadow = shadow.evaluate(q, t).T
+            shadow = shadow.evaluate(q, p, t).T
             a_ram *= shadow
 
         acc += a_ram
