@@ -41,7 +41,7 @@ class ShadowBase:
 
         self.dynamic_shadow = kwargs.get("dynamic", False)
 
-    def evaluate(self, xyz, t):
+    def evaluate(self, q, p, t):
         """
         Evaluates the shadow at the given coordinates.
 
@@ -198,7 +198,7 @@ class UniformShadow(ShadowBase):
 
         self.Rdisks = []
 
-    def evaluate(self, q, t):
+    def evaluate(self, q, p, t):
         x, y, z = q.T
 
         if self.dynamic_shadow:
@@ -245,7 +245,7 @@ class ExponentialShadow(ShadowBase):
         self.zmin = zmin
         self.phi = phi
 
-    def evaluate(self, q, t):
+    def evaluate(self, q, p, t):
         x, y, z = q.T
         cent = _shadow_tangent(z, self.phi)
         dist = np.sqrt((x - cent) ** 2 + y**2)
@@ -276,7 +276,7 @@ class EdgeOnShadow(ShadowBase):
         self.Rmax = kwargs.get("Rmax", 20)
         self.zmax = kwargs.get("zmax", 2)
 
-    def evaluate(self, q, t):
+    def evaluate(self, q, p, t):
         x, y, z = q.T
 
         if self.dynamic_shadow:
@@ -314,7 +314,7 @@ class UniformLinearZVariableShadow(ShadowBase):
 
         self.Rdisks = []
 
-    def evaluate(self, q, t):
+    def evaluate(self, q, p, t):
         x, y, z = q.T
 
         if self.dynamic_shadow:
@@ -352,7 +352,7 @@ class UniformExponentialZVariableShadow(ShadowBase):
 
         self.Rdisks = []
 
-    def evaluate(self, q, t):
+    def evaluate(self, q, p, t):
         x, y, z = q.T
 
         if self.dynamic_shadow:
@@ -391,7 +391,7 @@ class DynamicShadow:
 
         self.debug = kwargs.get("debug", False)
 
-    def evaluate(self, q, t):
+    def evaluate(self, q, p, t):
         """
         Evaluate the shadowing effect on particles dynamically, by rotating particles to the wind-frame of reference
         and then computing line-of sight depths.
