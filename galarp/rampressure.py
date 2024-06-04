@@ -20,7 +20,7 @@ from gala.units import galactic
 import gala.integrate as gi
 
 
-__all__ = ["F_RPS", "F_RPS_Surface_Density", "RPSim", "OrbitContainer"]
+__all__ = ["F_RPS", "F_RPS_Surface_Density", "F_RPS_Vollmer", "RPSim", "OrbitContainer"]
 
 
 def F_RPS(
@@ -71,9 +71,43 @@ def F_RPS_Surface_Density(
     # a_ram = rho * v_perp^2 / Sigma_cloud
     # TODO remove units altogether
     if wind_on:
-        v_perp = p - wind.evaluate(t)
-        a_ram = (v_perp**2) * (rho.evaluate(t) / sigma_gas).to(1 / u.kpc).value[:, np.newaxis]
+        v_perp = wind.evaluate(t) - p
+        a_ram = (v_perp**2) * (rho.evaluate(t) / sigma_gas).to(1 / u.kpc).value[:, np.newaxis] * np.sign(v_perp)
 
+        a_ram = a_ram.T
+
+        # If wind is on and shadow exists, apply shadow to appropriate particles
+        if shadow is not None:
+            shadow = shadow.evaluate(q, t).T
+            a_ram *= shadow
+
+        acc += a_ram
+
+    return np.vstack((p.T, acc))
+
+
+def F_RPS_Vollmer(
+    t, w, potential, shadow, wind, rho, sigma_gas, wind_on=True, debug=False):
+    # position units are in kpc
+    # velocity units here are in kpc/Myr
+    x, y, z, vx, vy, vz = w
+    q = np.stack((x, y, z), axis=1)
+    p = np.stack((vx, vy, vz), axis=1)
+
+    r = np.sqrt(np.sum(q**2, axis=1))
+    gamma = 15 * np.exp(-(r / 2)) + 1       # Equation 9 from Vollmer 2001
+
+    # compute acceleration from potential:
+    _t = np.array([0.0])
+    acc = -potential._gradient(q, _t).T
+
+    # Compute acceleration from ram pressure
+    # a_ram = rho * v_perp^2 / Sigma_cloud
+    # TODO remove units altogether
+    if wind_on:
+        v_perp = wind.evaluate(t) - p
+
+        a_ram = (v_perp**2) * (rho.evaluate(t) / sigma_gas / gamma).to(1 / u.kpc).value[:, np.newaxis] * np.sign(v_perp)
         a_ram = a_ram.T
 
         # If wind is on and shadow exists, apply shadow to appropriate particles
@@ -88,7 +122,7 @@ def F_RPS_Surface_Density(
 
 class RPSim:
     def __init__(
-        self, wind, potential, shadow=None, potential_name="", method=F_RPS):
+        self, wind, potential, shadow=None, potential_name="", method=F_RPS_Surface_Density):
         self.method = method
 
         self.wind = wind
@@ -147,6 +181,8 @@ class RPSim:
         if self.method == F_RPS:
             func_args = (self.potential, self.shadow, self.wind, self.rho_icm, r_cloud, m_cloud, wind_on)
         elif self.method == F_RPS_Surface_Density:
+            func_args = (self.potential, self.shadow, self.wind, self.rho_icm, self.sigma_gas, wind_on)
+        elif self.method == F_RPS_Vollmer:
             func_args = (self.potential, self.shadow, self.wind, self.rho_icm, self.sigma_gas, wind_on)
 
         integrator = gi.RK5Integrator(
