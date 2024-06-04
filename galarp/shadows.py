@@ -373,23 +373,38 @@ class UniformExponentialZVariableShadow(ShadowBase):
 
 
 class DynamicShadow:
-
-    def __init__(self, wind, depth=0.2, **kwargs):
-        self.depth = depth
+    
+    def __init__(self, wind, a_disk=20, b_disk=2,
+                  rho=grp.Density(1e-26 * u.g / u.cm ** 3), 
+                 tau_wind=1 * u.Myr, masses=None, radii=None, **kwargs):
         self.wind = wind
+        self.rho = rho
+
+        self.masses = masses
+        self.radii = radii * u.pc
 
         self.shadow_name = "Dynamic"
 
-        self.y_range = kwargs.get("y_range", (-20, 20))
-        self.z_range = kwargs.get("z_range", (-20, 20))
+        self.a_disk = a_disk
+        self.y_range = kwargs.get("y_range", (-self.a_disk, self.a_disk))
+        
+        self.b_disk = observed_minor_axis(a_disk, b_disk, wind.inclination)
+        self.z_range = kwargs.get("z_range", (-self.b_disk, self.b_disk))
+        
         self.n_bins = kwargs.get("n_bins", 20)
 
+        self.L_bin = (self.y_range[1] - self.y_range[0]) / self.n_bins * u.kpc
+        self.W_bin = (self.z_range[1] - self.z_range[0]) / self.n_bins * u.kpc
+
+        self.A_bin = self.L_bin * self.W_bin
+        self.tau_wind = tau_wind
 
         self.x_range = kwargs.get("x_range", (-20, 50))
         self.n_bins_wind_direction = kwargs.get("n_bins_wind_direction", 101)
 
-
         self.debug = kwargs.get("debug", False)
+        self.interps = []
+
 
     def evaluate(self, q, p, t):
         """
@@ -410,11 +425,15 @@ class DynamicShadow:
             Array of shadowing values for each particle.
         """
 
-        q = q.T
-
+        q, p = q.T, p.T
+    
         # STEP 1: Rotate the particles to the wind frame    
-        xyz_rotated = utils.rotate(q, beta=self.wind.inclination())
+
+        xyz_rotated = grp.rotate_yaxis(q, beta=np.pi/2 - self.wind.inclination)
         xyz_rotated_T = xyz_rotated.T
+        v_xyz_rotated = grp.rotate_yaxis(p, beta=np.pi/2 - self.wind.inclination)
+
+        v_wind = np.sqrt(np.sum(wind.evaluate(t) ** 2)) * u.kpc / u.Myr
 
         shadowing = np.ones(len(q[0]))
 
@@ -423,11 +442,18 @@ class DynamicShadow:
         y_bins = np.linspace(self.y_range[0], self.y_range[1], self.n_bins + 1)
         z_bins = np.linspace(self.z_range[0], self.z_range[1], self.n_bins + 1)
 
+        L_slab = self.tau_wind * v_wind        
+        A_clouds = np.pi * self.radii ** 2
+
+        # This is the momentum deposited by the slab into each cloud
+        # (p_dep / p_slab) = 2(1 + R_cl/L_slab)(1 - v_x/v_wind)(A_cloud/A_slab)
+        normalized_p = 2 * (1 + self.radii / L_slab) 
+        normalized_p *= (A_clouds / self.A_bin).cgs * (1 - v_xyz_rotated[0] * u.km / u.s / v_wind)
+        
+
         # Bin particles along y-z axis
         y_bin_indices = np.digitize(xyz_rotated[1], y_bins)
         z_bin_indices = np.digitize(xyz_rotated[2], z_bins)
-
-        shadow_bins = np.linspace(self.x_range[0], self.x_range[1], self.n_bins_wind_direction)
 
         # Get particles in the bin, and take only the z component
         # We take a cumulative sum of the histogram to get the integrated number of particles at each distance
@@ -436,23 +462,40 @@ class DynamicShadow:
                 
                 # Determine which particles are in this current bin              
                 in_bin = np.bitwise_and(y_bin_indices == i + 1, z_bin_indices == j + 1)
-                particles_in_z_bin = xyz_rotated_T[in_bin].T[0]
 
+                particles_in_z_bin = xyz_rotated_T[in_bin].T[0]     # Take x component of the rotated particles in bin
+                sorted_indices = np.argsort(particles_in_z_bin)     # Sort the particles by x component
+
+                if len(sorted_indices) == 0:
+                    continue
+                
+                cum_p = np.cumsum(normalized_p[sorted_indices])
+                cum_p = np.clip(cum_p, 0, 1)
+
+                interp = interp1d(particles_in_z_bin[sorted_indices], 1 - cum_p, kind="linear", 
+                                  fill_value=1, bounds_error=False, assume_sorted=True)
 
                 # Get a cumulative histogram of the particle x directions and make it into an interp object
                 # NOTE: This might be improved in the future to speed things up, but good for now
-                
-                histsum = np.cumsum(np.histogram(particles_in_z_bin, bins=shadow_bins)[0]) * self.depth
-                interp = interp1d(shadow_bins[:-1], 1 - np.min([histsum, np.ones(len(histsum))], axis=0), 
-                                kind="linear", fill_value=(0, 1), bounds_error=False)
-                
+
                 # Apply shadowing to the particles in this bin
-                shadowing[in_bin] = interp(xyz_rotated[0][in_bin])
+                shadowing[in_bin] = interp(xyz_rotated_T[in_bin].T[0])
+                
+                if self.debug:
+                    self.interps.append({"i": i, "j": j, "interp": interp})
+                    # fig, ax = plt.subplots(1, 2)
+                    # ax[0].hist(normalized_p, bins=30)
+                    # ax[1].hist(shadowing)
+                    # plt.show()
 
         return shadowing
 
-    def debug_evaluate(self, q, t, **kwargs):
-        shadowing = self.evaluate(q, t)
+
+    def debug_evaluate(self, q, p, t, **kwargs):
+        shadowing = self.evaluate(q, p, t)
+        xyz_rotated = grp.rotate_yaxis(q.T, beta=np.pi/2 - self.wind.inclination)
+        v_xyz_rotated = grp.rotate_yaxis(p.T, beta=np.pi/2 - self.wind.inclination)
+
 
         size = kwargs.get("size", 1)
 
@@ -461,16 +504,20 @@ class DynamicShadow:
 
         fig, ax = plt.subplots(1, 3, figsize=(12, 5))
 
-        m1 = ax[0].scatter(q[0], q[1], c=shadowing, cmap=cmap, s=size)
+        m1 = ax[0].scatter(xyz_rotated[0], xyz_rotated[1], c=v_xyz_rotated[0], cmap="rainbow", s=size)
         ax[0].set(xlabel="X [kpc]", ylabel="Y [kpc]", xlim=(-20, 20), ylim=(-20, 20))
 
-        m2 = ax[1].scatter(q[0], q[2], c=shadowing, cmap=cmap, s=size)
+        m2 = ax[1].scatter(xyz_rotated[0], xyz_rotated[2], c=shadowing, cmap=cmap, s=size)
         ax[1].set(xlabel="X [kpc]", ylabel="Z [kpc]", xlim=(-20, 20), ylim=(-20, 20))
 
-        m3 = ax[2].scatter(q[1], q[2], c=shadowing, cmap=cmap, s=size)
+        m3 = ax[2].scatter(xyz_rotated[1], xyz_rotated[2], c=shadowing, cmap=cmap, s=size)
         ax[2].set(xlabel="Y [kpc]", ylabel="Z [kpc]", xlim=(-20, 20), ylim=(-20, 20))
 
-        plt.colorbar(mappable=m1, ax=ax[0], label="Wind Strength", orientation="horizontal", location="top")
+        plot_grid(ax[2], 
+                  np.linspace(self.y_range[0], self.y_range[1], self.n_bins + 1), 
+                  np.linspace(self.z_range[0], self.z_range[1], self.n_bins + 1))
+
+        plt.colorbar(mappable=m1, ax=ax[0], label="X-Velocity [km s$^{-1}$]", orientation="horizontal", location="top")
         plt.colorbar(mappable=m2, ax=ax[1], label="Wind Strength", orientation="horizontal", location="top")
         plt.colorbar(mappable=m3, ax=ax[2], label="Wind Strength", orientation="horizontal", location="top")
 
