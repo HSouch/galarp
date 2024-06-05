@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 
 from scipy.interpolate import interp1d
 
-from . import utils
+from . import densities, utils
 
 from .postprocessing import analysis
 
@@ -375,7 +375,7 @@ class UniformExponentialZVariableShadow(ShadowBase):
 class DynamicShadow:
     
     def __init__(self, wind, a_disk=20, b_disk=2,
-                  rho=grp.Density(1e-26 * u.g / u.cm ** 3), 
+                  rho=densities.Density(1e-26 * u.g / u.cm ** 3), 
                  tau_wind=1 * u.Myr, masses=None, radii=None, **kwargs):
         self.wind = wind
         self.rho = rho
@@ -429,11 +429,11 @@ class DynamicShadow:
     
         # STEP 1: Rotate the particles to the wind frame    
 
-        xyz_rotated = grp.rotate_yaxis(q, beta=np.pi/2 - self.wind.inclination)
+        xyz_rotated = utils.rotate_yaxis(q, beta=np.pi/2 - self.wind.inclination)
         xyz_rotated_T = xyz_rotated.T
-        v_xyz_rotated = grp.rotate_yaxis(p, beta=np.pi/2 - self.wind.inclination)
+        v_xyz_rotated = utils.rotate_yaxis(p, beta=np.pi/2 - self.wind.inclination)
 
-        v_wind = np.sqrt(np.sum(wind.evaluate(t) ** 2)) * u.kpc / u.Myr
+        v_wind = np.sqrt(np.sum(self.wind.evaluate(t) ** 2)) * u.kpc / u.Myr
 
         shadowing = np.ones(len(q[0]))
 
@@ -493,8 +493,8 @@ class DynamicShadow:
 
     def debug_evaluate(self, q, p, t, **kwargs):
         shadowing = self.evaluate(q, p, t)
-        xyz_rotated = grp.rotate_yaxis(q.T, beta=np.pi/2 - self.wind.inclination)
-        v_xyz_rotated = grp.rotate_yaxis(p.T, beta=np.pi/2 - self.wind.inclination)
+        xyz_rotated = utils.rotate_yaxis(q.T, beta=np.pi/2 - self.wind.inclination)
+        v_xyz_rotated = utils.rotate_yaxis(p.T, beta=np.pi/2 - self.wind.inclination)
 
 
         size = kwargs.get("size", 1)
@@ -513,9 +513,9 @@ class DynamicShadow:
         m3 = ax[2].scatter(xyz_rotated[1], xyz_rotated[2], c=shadowing, cmap=cmap, s=size)
         ax[2].set(xlabel="Y [kpc]", ylabel="Z [kpc]", xlim=(-20, 20), ylim=(-20, 20))
 
-        plot_grid(ax[2], 
-                  np.linspace(self.y_range[0], self.y_range[1], self.n_bins + 1), 
-                  np.linspace(self.z_range[0], self.z_range[1], self.n_bins + 1))
+        # plot_grid(ax[2], 
+        #           np.linspace(self.y_range[0], self.y_range[1], self.n_bins + 1), 
+        #           np.linspace(self.z_range[0], self.z_range[1], self.n_bins + 1))
 
         plt.colorbar(mappable=m1, ax=ax[0], label="X-Velocity [km s$^{-1}$]", orientation="horizontal", location="top")
         plt.colorbar(mappable=m2, ax=ax[1], label="Wind Strength", orientation="horizontal", location="top")
