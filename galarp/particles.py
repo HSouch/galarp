@@ -167,6 +167,12 @@ class ParticleSet:
             velocity_dispersion (_type_, optional): Velocity dispersion is created using a . Defaults to 0*u.km/u.s.
         """
         px, py, pz = self.particles.x, self.particles.y, self.particles.z
+        for arr in [px, py, pz]:
+            if not isinstance(arr, u.Quantity):
+                arr *= self.units["length"]
+            else:
+                arr = arr.to(self.units["length"])
+        
         assert len(px) == len(py) == len(pz)
 
         R = np.sqrt(px**2 + py**2) #* self.units["length"]
