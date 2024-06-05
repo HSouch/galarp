@@ -45,11 +45,11 @@ def k3d_plot(
 
     colors = [0xFFFFFF, 0x3387FF, 0xFF3333]
 
-    wind = orbit_containers[0].metadata["WIND"].vector.to(u.km / u.s).value
-    wind = np.array([wind[1], wind[0], wind[2]])
-    wind /= np.sqrt(np.sum(wind**2))
-    wind_length = 2
-    wind_x0, wind_y0, wind_z0 = 0, 0, 0
+    # wind = orbit_containers[0].metadata["WIND"].vector.to(u.km / u.s).value
+    # wind = np.array([wind[1], wind[0], wind[2]])
+    # wind /= np.sqrt(np.sum(wind**2))
+    # wind_length = 2
+    # wind_x0, wind_y0, wind_z0 = 0, 0, 0
 
     ell_xs, ell_ys, ell_zs = utils.ellipse_coords(0, 0, 10, 10, 0)
 
@@ -94,19 +94,20 @@ def k3d_plot(
 
     plot += k3d.line(np.vstack([ell_xs, ell_ys, ell_zs]).T, color=0xFFFFFF)
 
-    plot += k3d.line(
-        (
-            [
-                wind_x0,
-                wind_x0 + wind[0] * wind_length,
-                wind_y0,
-                wind_y0 + wind[1] * wind_length,
-                wind_z0,
-                wind_z0 + wind[2] * wind_length,
-            ]
-        ),
-        color=particle_color,
-    )
+    # plot += k3d.line(
+    #     (
+    #         [
+    #             wind_x0,
+    #             wind_x0 + wind[0] * wind_length,
+    #             wind_y0,
+    #             wind_y0 + wind[1] * wind_length,
+    #             wind_z0,
+    #             wind_z0 + wind[2] * wind_length,
+    #         ]
+    #     ),
+    #     color=particle_color,
+    # )
+
     plot.display()
 
     with open(outname, "w") as fp:
