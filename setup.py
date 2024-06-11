@@ -42,4 +42,5 @@ setup(
         "scipy>=1.13.0",
         "tqdm>=4.66.1",
     ],
+    scripts=['scripts/galarp_cli.py']
 )
