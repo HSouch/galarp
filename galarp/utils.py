@@ -135,3 +135,11 @@ def rotate_yaxis(vec, beta=np.deg2rad(0)):
     rot_matrix_3 = [-np.sin(beta), 0, np.cos(beta)]
     rot_matrix = np.array([rot_matrix_1, rot_matrix_2, rot_matrix_3])
     return np.dot(rot_matrix, vec)
+
+
+def handle_quantity(a, unit):
+    if not isinstance(a, u.Quantity):
+        return a * unit
+    else:
+        return a.to(unit)
+    
