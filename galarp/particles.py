@@ -153,7 +153,13 @@ class ParticleSet:
     def __init__(self, particles=None, units=galactic, **kwargs):
         self.container = []
 
-        self.masses = self.radii = self.sigmas = None
+        self.masses = kwargs.get("masses", None)
+        self.radii = kwargs.get("radii", None)
+        self.sigmas = kwargs.get("sigmas", None)
+
+        if self.sigmas is None and self.masses is not None and self.radii is not None:
+            self.sigmas = self.masses / (np.pi * self.radii**2)
+
 
         self.particles = particles
         self.units = units
@@ -167,11 +173,10 @@ class ParticleSet:
             velocity_dispersion (_type_, optional): Velocity dispersion is created using a . Defaults to 0*u.km/u.s.
         """
         px, py, pz = self.particles.x, self.particles.y, self.particles.z
-        for arr in [px, py, pz]:
-            if not isinstance(arr, u.Quantity):
-                arr *= self.units["length"]
-            else:
-                arr = arr.to(self.units["length"])
+       
+        px = utils.handle_quantity(px, self.units["length"])
+        py = utils.handle_quantity(py, self.units["length"])
+        pz = utils.handle_quantity(pz, self.units["length"])
         
         assert len(px) == len(py) == len(pz)
 
