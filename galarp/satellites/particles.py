@@ -1,20 +1,21 @@
 from astropy import units as u
 import numpy as np
 
+from gala.units import galactic
 
 __all__ = ['SigmaGas']
 
 
 class SigmaGas:
 
-    def __init__(self, sigma, nparticles = 1, units=u.Msun/u.pc**2):
+    def __init__(self, sigma, nparticles = 1, units=galactic):
         if isinstance(sigma, SigmaGas):
             self.sigma = sigma.sigma
             self.nparticles = sigma.nparticles
         else:
             self.sigma = sigma
             self.nparticles = nparticles
-        self.units = units
+        self.units = units["mass"] / units["length"]**2
 
         if not isinstance(self.sigma, u.Quantity):
             self.sigma *= self.units
