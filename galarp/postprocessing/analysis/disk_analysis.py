@@ -144,3 +144,80 @@ def stripped(orbits, method="vrad"):
     stripped = v_particle > v_escape
 
     return np.sum(stripped, axis=1) / len(x[0])
+
+
+def Mdisk(orbits, masses=None, rmax = 27 * u.kpc, thickness=1 * u.kpc, **kwargs):
+
+    x,y,z, *_ = orbits.get_orbit_data(transposed=False)
+
+    r = np.sqrt(x**2 + y**2)
+
+    in_disk = np.logical_and(r < rmax.value, np.abs(z) < thickness.value)
+
+    evol = []
+    for i in range(len(orbits.data.t)):
+        if masses is None:
+            evol.append(np.sum(in_disk[i]) * orbits.metadata["M_CLOUD"].to(u.Msun).value)
+        else:
+            evol.append(np.sum(masses[in_disk[i]]))
+    
+    return orbits.data.t, np.array(evol)
+
+
+def mass_profile(orbits, masses, z_width = 5 * u.kpc, rmin=0, rmax=40, nbins=21, **kwargs):
+    x,y,z, *_ = orbits.get_orbit_data(transposed=False)
+
+    rs = np.linspace(rmin, rmax, nbins)
+    diff = np.mean(np.diff(rs))
+
+    mass_profiles = []
+
+    for i in range(0, len(orbits.data.t), 10):
+        this_x, this_y, this_z = x[i], y[i], z[i]
+        z_cut = np.abs(this_z) < z_width.value
+
+        this_x, this_y = this_x[z_cut], this_y[z_cut]
+        this_mass = masses[z_cut]
+
+        r = np.sqrt(this_x**2 + this_y**2)
+
+        binned_rs = np.digitize(r, rs)
+
+        m_r = []
+        for i in range(1, len(rs)):
+            in_bin = binned_rs == i
+            m_r.append(np.sum(this_mass[in_bin]))
+        mass_profiles.append(m_r)
+
+    
+    return np.array(mass_profiles)
+        
+
+def calc_surface_density_profile(orbits, masses, z_width = 5 * u.kpc, rmin=0, rmax=40, nbins=51, **kwargs):
+    x, y, z, *_ = orbits.get_orbit_data(transposed=False)
+
+    rs = np.linspace(rmin, rmax, nbins)
+    diff = np.mean(np.diff(rs))
+
+    surface_density_profiles = []
+
+    for i in range(0, len(orbits.data.t)):
+        this_x, this_y, this_z = x[i], y[i], z[i]
+        z_cut = np.abs(this_z) < z_width.value
+
+        this_x, this_y = this_x[z_cut], this_y[z_cut]
+        
+        this_mass = masses[z_cut]
+       # this_mass = np.copy(masses)
+
+        r = np.sqrt(this_x**2 + this_y**2)
+
+        binned_rs = np.digitize(r, rs)
+
+        sd_r = []
+        for i in range(1, len(rs)):
+            in_bin = binned_rs == i
+            sd_r.append(np.sum(this_mass[in_bin]) / (np.pi * (rs[i] ** 2 - rs[i-1] ** 2)))
+        surface_density_profiles.append((sd_r * u.Msun / u.kpc**2).to(u.Msun / u.pc**2).value)
+    
+    return rs[:-1] + diff/2, np.array(surface_density_profiles)
