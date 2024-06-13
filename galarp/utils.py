@@ -13,7 +13,7 @@ import pickle
 
 
 __all__ = ['v_circ', 'velocity', 'gen_mass_profile', 'm0', 'get_orbit_data', 'pickle_obj', 'Rvir', 'R100', 'R500',
-           'rotate', 'rotate_yaxis']
+           'rotate', 'rotate_yaxis', "handle_quantity", "observed_minor_axis"]
 
 
 #############################################
@@ -143,3 +143,20 @@ def handle_quantity(a, unit):
     else:
         return a.to(unit)
     
+
+def observed_minor_axis(a, b, inc):
+    """ Estimate the observed axial ratio of a disk given the intrinsic axial ratio and inclination.
+        From Holmberg (1958): https://ui.adsabs.harvard.edu/abs/1958MeLu2.136....1H/abstract
+
+    Args:
+        x (float): Size of disk intended to be measured
+        a (_type_): Intrinsic major axis
+        b (_type_): Intrinsic minor axis
+        inc (_type_): Inclination of the disk
+
+    Returns:
+        float: _description_
+    """
+    disk_axial_ratio = b/a
+
+    return a * (np.cos(inc) **2 * (1 - disk_axial_ratio**2) + disk_axial_ratio**2) ** 0.5

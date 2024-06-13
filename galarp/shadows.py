@@ -388,7 +388,7 @@ class DynamicShadow:
         self.a_disk = a_disk
         self.y_range = kwargs.get("y_range", (-self.a_disk, self.a_disk))
         
-        self.b_disk = observed_minor_axis(a_disk, b_disk, wind.inclination)
+        self.b_disk = utils.observed_minor_axis(a_disk, b_disk, wind.inclination)
         self.z_range = kwargs.get("z_range", (-self.b_disk, self.b_disk))
         
         self.n_bins = kwargs.get("n_bins", 20)
