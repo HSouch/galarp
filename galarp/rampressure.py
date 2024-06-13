@@ -20,7 +20,7 @@ from gala.units import galactic
 import gala.integrate as gi
 
 
-__all__ = ["F_RPS", "F_RPS_Surface_Density", "F_RPS_Vollmer", "RPSim", "OrbitContainer"]
+__all__ = ["F_RPS", "F_RPS_Surface_Density", "F_RPS_Vollmer", "RPSim", "OrbitContainer", "autogen_fn", "save_orbits"]
 
 
 def F_RPS(
