@@ -132,7 +132,9 @@ def create_particles(potential):
         return grp.ParticleDistribution.from_file(fn)
     
     
-    
+    # Add an option to generate masses
+
+    # Add an option to generate radii from surface density profiles (or something)
 
 
 
