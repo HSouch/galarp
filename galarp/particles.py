@@ -83,7 +83,7 @@ class PlaneDistribution(ParticleDistribution):
 class ExponentialDistribution(ParticleDistribution):
     # Class to generate particles in an exponential disk
 
-    def __init__(self, h_R=4, h_z=0.5, n_particles=100, gen_positions=True,  **kwargs):
+    def __init__(self, h_R=4., h_z=0.5, n_particles=100, gen_positions=True,  **kwargs):
         super().__init__(**kwargs)
 
         self.h_R = h_R
