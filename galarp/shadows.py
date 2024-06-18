@@ -8,7 +8,7 @@ from . import densities, utils
 
 from .postprocessing import analysis
 
-__all__ = ["DynamicShadow",  "UniformShadow", "ExponentialShadow", "EdgeOnShadow", 
+__all__ = ["DynamicShadow", "DynamicShadowMasses",  "UniformShadow", "ExponentialShadow", "EdgeOnShadow", 
            "UniformLinearZVariableShadow", "UniformExponentialZVariableShadow"]
 
 
@@ -374,8 +374,7 @@ class UniformExponentialZVariableShadow(ShadowBase):
 
 class DynamicShadow:
     
-    def __init__(self, wind, a_disk=20, b_disk=2,
-                  rho=densities.Density(1e-26 * u.g / u.cm ** 3), 
+    def __init__(self, wind, a_disk=20, b_disk=2,  rho=densities.Density(1e-26 * u.g / u.cm ** 3), 
                  tau_wind=1 * u.Myr, masses=None, radii=None, **kwargs):
         self.wind = wind
         self.rho = rho
@@ -518,6 +517,148 @@ class DynamicShadow:
         #           np.linspace(self.z_range[0], self.z_range[1], self.n_bins + 1))
 
         plt.colorbar(mappable=m1, ax=ax[0], label="X-Velocity [km s$^{-1}$]", orientation="horizontal", location="top")
+        plt.colorbar(mappable=m2, ax=ax[1], label="Wind Strength", orientation="horizontal", location="top")
+        plt.colorbar(mappable=m3, ax=ax[2], label="Wind Strength", orientation="horizontal", location="top")
+
+        plt.tight_layout()
+        if outname is not None:
+            plt.savefig(outname, dpi=kwargs.get("dpi", 200))
+            plt.close()
+
+
+
+class DynamicShadowMasses:
+
+    def __init__(self, wind, a_disk=20, b_disk=2, depth=5e10,
+                 tau_wind=1 * u.Myr, masses=None, radii=None, **kwargs):
+        self.wind = wind
+
+        self.depth = depth
+
+        self.masses = masses
+        self.mass_fractions = self.masses / self.depth
+
+        self.radii = radii * u.pc
+
+        self.shadow_name = "Dynamic"
+
+        self.a_disk = a_disk
+        self.y_range = kwargs.get("y_range", (-self.a_disk, self.a_disk))
+        
+        self.b_disk = utils.observed_minor_axis(a_disk, b_disk, wind.inclination)
+        self.z_range = kwargs.get("z_range", (-self.b_disk, self.b_disk))
+        
+        self.n_bins = kwargs.get("n_bins", 20)
+
+        self.L_bin = (self.y_range[1] - self.y_range[0]) / self.n_bins * u.kpc
+        self.W_bin = (self.z_range[1] - self.z_range[0]) / self.n_bins * u.kpc
+
+        self.A_bin = self.L_bin * self.W_bin
+        
+        self.bin_area_ratio = self.A_bin / (self.a_disk * self.b_disk * u.kpc ** 2)
+
+        self.tau_wind = tau_wind
+
+        self.x_range = kwargs.get("x_range", (-20, 50))
+        self.n_bins_wind_direction = kwargs.get("n_bins_wind_direction", 101)
+
+        self.debug = kwargs.get("debug", False)
+        self.interps = []
+
+
+    def evaluate(self, q, p, t):
+        """
+        Evaluate the shadowing effect on particles dynamically, by rotating particles to the wind-frame of reference
+        and then computing line-of sight depths.
+
+        NOTE: In the wind frame, the Y-Z plane is what the wind "sees", and the X-axis is the distance along the
+        wind direction.
+
+        Parameters:
+        - q: numpy array, shape (3, N)
+            Array of particle positions.
+        - t: float
+            Time parameter (Redundant for this shadow, but might be useful if we implement a changing wind inclination).
+
+        Returns:
+        - shadowing: numpy array, shape (N,)
+            Array of shadowing values for each particle.
+        """
+
+        q, p = q.T, p.T
+    
+        # STEP 1: Rotate the particles to the wind frame    
+
+        xyz_rotated = utils.rotate_yaxis(q, beta=np.pi/2 - self.wind.inclination)
+        xyz_rotated_T = xyz_rotated.T
+
+        shadowing = np.ones(len(q[0]))
+
+        # STEP 2: Bin the particles along the y-z axis to get distribution along wind's line of sight
+        # Create bins along the y and z axis
+        y_bins = np.linspace(self.y_range[0], self.y_range[1], self.n_bins + 1)
+        z_bins = np.linspace(self.z_range[0], self.z_range[1], self.n_bins + 1)
+
+        # Bin particles along y-z axis
+        y_bin_indices = np.digitize(xyz_rotated[1], y_bins)
+        z_bin_indices = np.digitize(xyz_rotated[2], z_bins)
+
+        # Get particles in the bin, and take only the z component
+        # We take a cumulative sum of the histogram to get the integrated number of particles at each distance
+        for i in range(self.n_bins):
+            for j in range(self.n_bins):
+                
+                # Determine which particles are in this current bin              
+                in_bin = np.bitwise_and(y_bin_indices == i + 1, z_bin_indices == j + 1)
+
+                particles_in_bin = xyz_rotated_T[in_bin].T[0]     # Take x component of the rotated particles in bin
+                sorted_indices = np.argsort(particles_in_bin)     # Sort the particles by x component
+                
+                if len(sorted_indices) == 0:
+                    continue
+                
+                cumulative_mass = 1 - np.cumsum(self.mass_fractions[in_bin][sorted_indices]) / self.bin_area_ratio
+                if len(cumulative_mass) == 0:
+                    continue
+                cumulative_mass = np.clip(cumulative_mass, 0, 1)
+
+                interp = interp1d(particles_in_bin[sorted_indices], cumulative_mass, kind="linear", 
+                                  fill_value=1, bounds_error=False, assume_sorted=True)
+
+                # # Apply shadowing to the particles in this bin
+                shadowing[in_bin] = interp(xyz_rotated_T[in_bin].T[0])
+                
+                if self.debug:
+                    interp = interp1d(particles_in_bin[sorted_indices], cumulative_mass, kind="linear", 
+                                  fill_value=1, bounds_error=False, assume_sorted=True)
+                    self.interps.append({"i": i, "j": j, "interp": interp})
+
+        return shadowing
+
+
+    def debug_evaluate(self, q, p, t, **kwargs):
+        shadowing = self.evaluate(q, p, t)
+        xyz_rotated = utils.rotate_yaxis(q.T, beta=np.pi/2 - self.wind.inclination)
+        v_xyz_rotated = utils.rotate_yaxis(p.T, beta=np.pi/2 - self.wind.inclination)
+
+
+        size = kwargs.get("size", 1)
+
+        outname = kwargs.get("outname", None)
+        cmap = kwargs.get("cmap", "magma")
+
+        fig, ax = plt.subplots(1, 3, figsize=(12, 5))
+
+        m1 = ax[0].scatter(xyz_rotated[0], xyz_rotated[1], c=shadowing, cmap=cmap, s=size, vmin=0, vmax=1)
+        ax[0].set(xlabel="X [kpc]", ylabel="Y [kpc]", xlim=(-20, 20), ylim=(-20, 20))
+
+        m2 = ax[1].scatter(xyz_rotated[0], xyz_rotated[2], c=shadowing, cmap=cmap, s=size, vmin=0, vmax=1)
+        ax[1].set(xlabel="X [kpc]", ylabel="Z [kpc]", xlim=(-20, 20), ylim=(-20, 20))
+
+        m3 = ax[2].scatter(xyz_rotated[1], xyz_rotated[2], c=shadowing, cmap=cmap, s=size, vmin=0, vmax=1)
+        ax[2].set(xlabel="Y [kpc]", ylabel="Z [kpc]", xlim=(-20, 20), ylim=(-20, 20))
+
+        plt.colorbar(mappable=m1, ax=ax[0], label="Wind Strength", orientation="horizontal", location="top")
         plt.colorbar(mappable=m2, ax=ax[1], label="Wind Strength", orientation="horizontal", location="top")
         plt.colorbar(mappable=m3, ax=ax[2], label="Wind Strength", orientation="horizontal", location="top")
 
