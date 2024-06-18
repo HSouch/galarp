@@ -22,3 +22,19 @@ def RB2006_Wind(inc = 45, peak = 800):
     wind = InterpolatedStrengthWind(interp=interp, inclination=np.deg2rad(inc), units=galactic)
 
     return wind
+
+
+def gradual_to_constant_peak(inc = 45., peak=800., time_to_max=100.):
+
+    peak = peak * (u.km/u.s).to(u.kpc / u.Myr)
+
+    i_x, i_y = np.linspace(0, time_to_max, 50), np.linspace(0, peak, 50)
+
+    i_x = np.concatenate([i_x, np.linspace(time_to_max, 1000, 950)])
+    i_y = np.concatenate([i_y, peak * np.ones(950)])
+
+    interp = interp1d(i_x, i_y, bounds_error=False, fill_value="extrapolate")
+
+    wind = InterpolatedStrengthWind(interp=interp, inclination=np.deg2rad(inc), units=galactic)
+
+    return wind
