@@ -51,7 +51,9 @@ def animated_hexbin_plot(orbits, x_ind=1, y_ind=2, n_frames=100, **kwargs):
     
     fig, ax = plt.subplots(2, 2, facecolor="white", figsize=figsize)
 
-    frames = np.linspace(0, len(orbits.data.t) - 1, n_frames).astype(int)
+    imin = kwargs.get("imin", 0)
+    imax = kwargs.get("imax", len(orbits.data.t) - 1)
+    frames = np.linspace(imin, imax, n_frames).astype(int)
 
     x,y,z,vx,vy,vz = orbits.get_orbit_data(transposed=False)   
 
