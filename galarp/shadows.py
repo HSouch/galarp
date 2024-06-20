@@ -8,6 +8,8 @@ from . import densities, utils
 
 from .postprocessing import analysis
 
+from gala.units import galactic
+
 __all__ = ["DynamicShadow", "DynamicShadowMasses",  "UniformShadow", "ExponentialShadow", "EdgeOnShadow", 
            "UniformLinearZVariableShadow", "UniformExponentialZVariableShadow"]
 
@@ -32,10 +34,10 @@ class ShadowBase:
     - __repr__(): Returns a string representation of the shadow object.
     """
 
-    def __init__(self, damping=0.5, R_disk=10, shadow_name="ShadowBase", **kwargs):
+    def __init__(self, damping=0.5, R_disk=10 * u.kpc, shadow_name="ShadowBase", units=galactic, **kwargs):
         self.damping = damping
         if isinstance(R_disk, u.Quantity):
-            R_disk = R_disk.to(u.kpc).value
+            R_disk = R_disk.to(units["length"]).value
         self.R_disk = R_disk
         self.shadow_name = shadow_name
 

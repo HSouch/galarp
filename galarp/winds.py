@@ -41,7 +41,7 @@ class RPWind:
 
     """
 
-    def __init__(self, inclination=0, strength=800 * u.km / u.s, units=None, **kwargs):
+    def __init__(self, inclination=0, strength=800 * u.km / u.s, units=galactic, **kwargs):
         self.units = galactic if units is None else units
         self.inclination = inclination
 
