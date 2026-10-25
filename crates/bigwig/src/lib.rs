@@ -5,8 +5,11 @@
 //! shadowing.
 //! 
 
+pub mod cluster;
+pub mod orbit;
 pub mod potentials;
 
+pub mod external;
 pub mod orientation;
 pub mod rng;
 pub mod units;
