@@ -12,8 +12,15 @@ pub fn cross(a: &[f64; 3], b: &[f64; 3]) -> [f64; 3] {
     [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
 }
 
+
+#[inline]
+pub fn norm(a: &[f64; 3]) -> f64 {
+    dot(&a, &a).sqrt()
+}
+
+
 pub fn normalized(a: [f64; 3]) -> [f64; 3] {
-    let n = dot(&a, &a).sqrt();
+    let n = norm(&a);
     [a[0] / n, a[1] / n, a[2] / n]
 }
 
