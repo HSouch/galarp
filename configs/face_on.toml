@@ -1,0 +1,63 @@
+# Restricted run, case 2: a face-on 1000 km/s wind, no shadowing.
+#
+#   cargo run --release -p bigwig-restricted -- configs/restricted/face_on.toml
+
+[run]
+output_dir = "runs/restricted/face_on"
+t_end_myr = 300
+dt_max_myr = 2
+snapshot_interval_myr = 10
+
+[box]
+side_kpc = 80
+
+# n of about 1e-3 cm^-3 at rest in the cluster frame; the galaxy moves through it at
+# 1000 km/s, so P_ram = 1e-11 dyn/cm^2.
+[cluster.gas]
+model = "uniform"
+density_g_cm3 = 1e-27
+temperature_k = 5e7
+
+[ram_pressure]
+enabled = true
+surface_density_msun_pc2 = 10
+
+[ram_pressure.shadow]
+enabled = false
+drag_coefficient = 0.5
+bin_width_kpc = 2
+
+[restricted]
+dt_myr = 0.5
+
+[[galaxy]]
+name = "milky_way"
+
+[[galaxy.potential]]
+type = "miyamoto_nagai"
+mass_msun = 5e10
+a_kpc = 3.0
+b_kpc = 0.3
+
+[[galaxy.potential]]
+type = "hernquist"
+mass_msun = 1e10
+a_kpc = 0.5
+
+[[galaxy.potential]]
+type = "nfw"
+m_msun = 6e11
+r_s_kpc = 15
+
+[galaxy.disk]
+mass_msun = 5e9
+scale_length_kpc = 4
+r_max_kpc = 20
+sound_speed_km_s = 20
+n_particles = 5000
+
+# Moving along +z: the wind blows along -z, at 0 degrees from the disk normal.
+[galaxy.orbit]
+mode = "constant_velocity"
+position_kpc = [0, 0, 0]
+velocity_km_s = [0, 0, 1000]
