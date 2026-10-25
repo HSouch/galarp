@@ -2,7 +2,7 @@
 // CODE UNITS
 
 pub const UNIT_LENGTH_CM: f64 = 3.085_677_581e21;   // Code length unit: 1kpc
-pub const UNIT_MASS_G: f64 = 1.988_92e43;           // Code mass unit: 1 Msun
+pub const UNIT_MASS_G: f64 = 1.988_92e43;           // Code mass unit: 10^10 Msun
 pub const UNIT_VELOCITY_CM_S: f64 = 1.0e5;          // Code velocity unit 1 km/s
 pub const UNIT_TIME_S: f64 = UNIT_LENGTH_CM / UNIT_VELOCITY_CM_S;
 
@@ -23,6 +23,12 @@ pub const G: f64 = G_CGS * UNIT_MASS_G / (UNIT_LENGTH_CM * UNIT_VELOCITY_CM_S * 
 pub const SOLAR_METALLICITY: f64 = 0.0134;
 
 pub const GAMMA: f64 = 5.0 / 3.0;                   // Adiabatic constant for a monatomic ideal gas
+
+
+/// Code time units per Myr.
+pub const MYR: f64 = 3.15576e13 / UNIT_TIME_S;
+/// Code mass units per solar mass.
+pub const MSUN: f64 = 1e-10;
 
 
 /// Determines specific energy from a given temperature with mean molecular weight mu
