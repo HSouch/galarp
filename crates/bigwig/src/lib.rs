@@ -5,10 +5,14 @@
 //! shadowing.
 //! 
 
+// Larger modules
 pub mod cluster;
+pub mod galarp;
+pub mod ic;
 pub mod orbit;
 pub mod potentials;
 
+// Single file crates
 pub mod external;
 pub mod orientation;
 pub mod rng;
