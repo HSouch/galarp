@@ -5,6 +5,8 @@ use ratatui::DefaultTerminal;
 
 
 mod app;
+mod editor;
+mod form;
 mod ui;
 pub use app::{App, Tab};
 

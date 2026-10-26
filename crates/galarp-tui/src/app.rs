@@ -1,10 +1,12 @@
 
-use std::path::{Path, PathBuf};
+use std::path::{self, Path, PathBuf};
 use std::collections::HashMap;
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::ListState;
 use crate::configs::{self, Check};
+use crate::editor::Editor;
+use crate::form::{ConfigDoc, Row, Seg, Validation};
 
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -53,11 +55,15 @@ pub struct App {
     pub tab: Tab,
     pub mode: Mode,
 
+    pub message: Option<(String, bool)>,
+
     pub cwd: PathBuf,
     pub files: Vec<PathBuf>,
     pub list: ListState,
 
     checks: HashMap<PathBuf, Check>,
+
+    pub editor: Option<Editor>,
 }
 
 
@@ -70,10 +76,12 @@ impl App {
             quit: false, 
             tab: Tab::Configs, 
             mode: Mode::Normal, 
+            message: None,
             cwd, 
             files,
             list, 
-            checks: HashMap::new() 
+            checks: HashMap::new(),
+            editor: None,
         }
     }
 
@@ -94,8 +102,13 @@ impl App {
         p.strip_prefix(&self.cwd).unwrap_or(p).to_string_lossy()
     }
 
+    fn error(&mut self, msg: impl Into<String>) {
+        self.message = Some((msg.into(), true))
+    }
+
 
     pub fn on_key(&mut self, key: KeyEvent) {
+        self.message = None;    // Reset any status message on new key press
 
         // We need to use the replace line to make the borrow checker happy
         match std::mem::replace(&mut self.mode, Mode::Normal) {
@@ -113,6 +126,7 @@ impl App {
             KeyCode::BackTab => self.tab = Tab::ALL[(self.tab.index() + Tab::ALL.len() - 1) % Tab::ALL.len()],
             _ => match self.tab {
                 Tab::Configs => self.on_configs_key(key),
+                Tab::Edit => self.on_edit_key(key),
                 _ => {},
             }
         }
@@ -130,6 +144,22 @@ impl App {
         }
     }
 
+    fn on_edit_key(&mut self, key: KeyEvent) {
+        let Some(ed) = self.editor.as_mut() else { return };
+
+        match key.code {
+            KeyCode::Down | KeyCode::Char('j') => ed.move_by(1),
+            KeyCode::Up | KeyCode::Char('k') => ed.move_by(-1),
+            KeyCode::PageDown => ed.move_by(10),
+            KeyCode::PageUp => ed.move_by(-10),
+            KeyCode::Enter | KeyCode::Char(' ') | KeyCode::Char('e') => {
+                let Some(path) = self.selected().cloned() else { return };
+                // Booleans flip in place; everything else opens the text input.
+                self.open(&path);
+            }
+            _ => {}
+            }
+        }
 
     fn rescan(&mut self) {
         self.files = configs::find(&self.cwd);
@@ -137,5 +167,17 @@ impl App {
         self.list.select((!self.files.is_empty()).then_some(0));
     }
 
+
+    fn open(&mut self, path: &Path) {
+        match ConfigDoc::load(path) {
+            Ok(doc) => {
+                self.editor = Some(Editor::new(doc));
+                self.tab = Tab::Edit;
+            }
+            Err(e) => self.error(e),
+        }
+    }
+
 }
+
 
