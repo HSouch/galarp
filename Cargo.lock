@@ -581,6 +581,7 @@ dependencies = [
  "bigwig-io",
  "galarp-run",
  "ratatui",
+ "toml_edit 0.22.27",
 ]
 
 [[package]]

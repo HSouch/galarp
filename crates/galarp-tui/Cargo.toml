@@ -9,3 +9,4 @@ license.workspace = true
 bigwig-io.workspace = true
 galarp-run = {path = "../galarp-run"}
 ratatui="0.30"
+toml_edit = "0.22"
