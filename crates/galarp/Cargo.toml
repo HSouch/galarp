@@ -1,11 +1,15 @@
 [package]
 name = "galarp"
 description = "Core library for idealized wind-tunnel simulations."
-version.workspace = true
+
 edition.workspace = true
+version.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
 license.workspace = true
-keywords = ["astronomy", "galaxies"]
-repository = "https://github.com/HSouch/GalaRP"
+readme = "README.md"
 
 [dependencies]
 rand = { version = "0.10.3", default-features = false }
