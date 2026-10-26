@@ -3,7 +3,7 @@
 #   cargo run --release -p bigwig-restricted -- configs/restricted/face_on.toml
 
 [run]
-output_dir = "runs/restricted/face_on"
+output_dir = "runs/face_on"
 t_end_myr = 300
 dt_max_myr = 2
 snapshot_interval_myr = 10
@@ -27,7 +27,7 @@ enabled = false
 drag_coefficient = 0.5
 bin_width_kpc = 2
 
-[restricted]
+[galarp]
 dt_myr = 0.5
 
 [[galaxy]]
