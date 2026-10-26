@@ -578,6 +578,8 @@ dependencies = [
 name = "galarp-tui"
 version = "0.1.0"
 dependencies = [
+ "bigwig-io",
+ "galarp-run",
  "ratatui",
 ]
 
