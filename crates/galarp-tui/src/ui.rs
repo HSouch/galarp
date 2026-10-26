@@ -1,11 +1,11 @@
 
-use ratatui::layout::{Constraint, Layout, Rect};
-use ratatui::style::{Color, Style, Stylize};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, List, Paragraph, Tabs, Wrap};
+use ratatui::layout::{Constraint, Flex, Layout, Rect};
+use ratatui::style::{Color, Modifier, Style, Stylize};
+use ratatui::text::{Line, Span, Text};
+use ratatui::widgets::{Block, Clear, List, Paragraph, Tabs, Wrap};
 use ratatui::Frame;
 
-use crate::{App, Tab};
+use crate::app::{App, Mode, Tab};
 
 
 pub fn draw(frame: &mut Frame, app: &mut App) {
@@ -31,6 +31,11 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
 
     // frame.render_widget(Line::from("Tab switch q quit").dim(), status);
     draw_status(frame, status, app);
+
+    match &app.mode {
+        Mode::Normal => {},
+        Mode::Help => draw_help(frame),
+    }
 }
 
 
@@ -42,11 +47,11 @@ fn placeholder(frame: &mut Frame, area: Rect, msg: &str) {
 
 fn draw_status(frame: &mut Frame, area: Rect, app: &App) {
     let keys = match app.tab {
-        Tab::Configs => "Arrow Keys + Vim Motions move  r reload",
+        Tab::Configs => "Arrow Keys + Vim Motions move   r reload",
         _ => "",
     };
     let line = Line::from(vec![
-        Span::raw(format!(" {keys}  ")), Span::raw("Tab switch  q quit").dim()
+        Span::raw(format!(" {keys}   ")), Span::raw("Tab switch   ? help   q quit").dim()
     ]);
     frame.render_widget(line, area);
 }
@@ -93,10 +98,40 @@ fn draw_configs(frame: &mut Frame, area: Rect, app: &mut App) {
     frame.render_widget(
         Paragraph::new(lines).block(summary_block).wrap(Wrap { trim: false}), 
         summary);
-        
+
     frame.render_widget(
         Paragraph::new(check.text.clone()).block(Block::bordered().title(" File "))
             .wrap(Wrap { trim: false}), 
         text);
     // Now do the other side with a preview pane and config file viewer //////////
 }   
+
+
+fn draw_help(frame: &mut Frame) {
+    let text = Text::from(vec![
+        Line::from("GalaRP TUI".add_modifier(Modifier::BOLD)),
+        Line::raw(""),
+        Line::raw("Tab / Shift-Tab   switch tabs"),
+        Line::raw("↑↓ or j k         move"),
+        Line::raw(""),
+        Line::from("Configs".bold()),
+        Line::raw("r                 reload the config list"),
+        Line::raw(""),
+        Line::raw("?                 this help"),
+        Line::raw("q                 quit"),
+        Line::raw(""),
+        Line::from("any key closes this".dim()),
+    ]);
+    let area = popup(frame, 48, text.height() as u16 + 2);
+    frame.render_widget(Paragraph::new(text).block(Block::bordered().title(" Help ")), area);
+
+}
+
+
+fn popup(frame: &mut Frame, width: u16, height: u16) -> Rect {
+    let [area] = Layout::horizontal([Constraint::Length(width)]).flex(Flex::Center).areas(frame.area());
+    let [area] = Layout::vertical([Constraint::Length(height)]).flex(Flex::Center).areas(area);
+
+    frame.render_widget(Clear, area);
+    area
+}
