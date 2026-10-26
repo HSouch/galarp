@@ -4,7 +4,8 @@ description = "Core library for idealized wind-tunnel simulations."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-keywordds = ["astronomy", "galaxies"]
+keywords = ["astronomy", "galaxies"]
+repository = "https://github.com/HSouch/GalaRP"
 
 [dependencies]
 rand = { version = "0.10.3", default-features = false }
