@@ -1,12 +1,12 @@
 
-use std::path::{self, Path, PathBuf};
+use std::path::{ Path, PathBuf};
 use std::collections::HashMap;
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::ListState;
 use crate::configs::{self, Check};
 use crate::editor::Editor;
-use crate::form::{ConfigDoc, Row, Seg, Validation};
+use crate::form::{ConfigDoc}; // , Row, Seg, Validation};
 
 
 #[derive(Clone, Copy, PartialEq, Eq)]

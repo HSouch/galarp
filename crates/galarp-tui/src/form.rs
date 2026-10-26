@@ -9,11 +9,13 @@
 //!     Either a section header
 //! or a field with a path.
 
-use std::{fmt::format, path::{Path, PathBuf}};
+use std::{ path::{Path, PathBuf}};
 
 use bigwig_io::config::Config;
 use bigwig_io::snapshot::output_path;
 use galarp_run::Run;
+use crate::preview::Preview;
+
 use toml_edit::{DocumentMut, Item, Table, TableLike, Value};
 
 /// One step of a key path: a table key, or an entry of an array of tables (`[[galaxy]]`).
@@ -218,8 +220,13 @@ impl ConfigDoc {
         let text = self.text();
         let cfg = Config::from_str_in(&text, base);
         let output_dir = cfg.as_ref().map_or_else(|_| PathBuf::new(), |c| c.run.output_dir.clone());
+        
+        let preview = cfg.as_ref().ok().map(Preview::new);
+
         let result = cfg.map_err(|e| e.0).and_then(|cfg| Run::new(cfg, text).map(|r| r.summary).map_err(|e| e.to_string()));
-        Validation { output_has_snapshots: !output_dir.as_os_str().is_empty() && output_path(&output_dir, 0).exists(), output_dir, result }
+        Validation { output_has_snapshots: !output_dir
+            .as_os_str().is_empty() && output_path(&output_dir, 0).exists(), 
+            output_dir, result, preview}
     }
 }
 
@@ -231,6 +238,7 @@ pub struct Validation {
     /// overwrite snapshots.
     pub output_dir: PathBuf,
     pub output_has_snapshots: bool,
+    pub preview: Option<Result<Preview, String>>,
 }
 
 

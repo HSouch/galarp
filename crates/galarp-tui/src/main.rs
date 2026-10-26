@@ -7,6 +7,8 @@ use ratatui::DefaultTerminal;
 mod app;
 mod editor;
 mod form;
+mod plots;
+mod preview;
 mod ui;
 pub use app::{App, Tab};
 
