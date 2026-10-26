@@ -1,0 +1,9 @@
+[package]
+name = "galarp-tui"
+description="Terminal UI to view, make, run, and watch GalaRP runs"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+ratatui="0.30"

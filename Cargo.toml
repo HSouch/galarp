@@ -6,6 +6,7 @@ members = [
     "crates/bigwig",
     "crates/bigwig-io",
     "crates/galarp-run",
+    "crates/galarp-tui",
 ]
 
 [workspace.package]
