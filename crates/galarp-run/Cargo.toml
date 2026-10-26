@@ -1,0 +1,11 @@
+[package]
+name = "galarp-run"
+description = "Run GalaRP from an input config file"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+bigwig.workspace = true
+bigwig-io.workspace = true
+clap.workspace = true
