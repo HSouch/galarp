@@ -24,6 +24,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     
     match app.tab {
         Tab::Configs => draw_configs(frame, body, app),
+        Tab::Edit => draw_edit(frame, body, app),
         _=> placeholder(frame, body, "not built yet"),
     }
 
@@ -105,6 +106,11 @@ fn draw_configs(frame: &mut Frame, area: Rect, app: &mut App) {
         text);
     // Now do the other side with a preview pane and config file viewer //////////
 }   
+
+
+fn draw_edit(frame: &mut Frame, area: Rect, app: &mut App) {
+    
+}
 
 
 fn draw_help(frame: &mut Frame) {
