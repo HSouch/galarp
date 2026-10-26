@@ -5,6 +5,7 @@ resolver = "2"
 members = [
     "crates/bigwig",
     "crates/bigwig-io",
+    "crates/galarp-run",
 ]
 
 [workspace.package]
