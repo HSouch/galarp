@@ -6,7 +6,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-bigwig-io.workspace = true
+galarp-io.workspace = true
 galarp-run = {path = "../galarp-run"}
 ratatui="0.30"
 toml_edit = "0.22"

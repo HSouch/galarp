@@ -2,7 +2,7 @@
 
 use std::io::{self, Write};
 
-use bigwig::units::{self, MYR, UNIT_LENGTH_CM};
+use galarp::units::{self, MYR, UNIT_LENGTH_CM};
 
 use crate::config::{Config, ConfigError};
 

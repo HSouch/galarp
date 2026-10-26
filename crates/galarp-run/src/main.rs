@@ -6,8 +6,8 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 use std::time::Instant;
 
-use bigwig_io::config::Config;
-use bigwig_io::snapshot::output_path;
+use galarp_io::config::Config;
+use galarp_io::snapshot::output_path;
 use galarp_run::{Error, Run};
 use clap::Parser;
 

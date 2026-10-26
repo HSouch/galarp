@@ -1,4 +1,4 @@
-//! Core library for GalaRP in Bigwig
+//! Core library for GalaRP
 //! 
 //! Gas clouds are test particles in analytic galaxy and cluster potentials, each galaxy
 //! carried along a precomputed orbit pushed by an analytic RP wind with column-density
@@ -7,7 +7,7 @@
 
 // Larger modules
 pub mod cluster;
-pub mod galarp;
+pub mod analytic;
 pub mod ic;
 pub mod orbit;
 pub mod potentials;

@@ -10,8 +10,8 @@
 
 use std::path::{Path, PathBuf};
 
-use bigwig::galarp::Clouds;
-use bigwig::units;
+use galarp::analytic::Clouds;
+use galarp::units;
 use hdf5::types::VarLenUnicode;
 use hdf5::{File, Group, H5Type};
 

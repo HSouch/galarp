@@ -86,7 +86,7 @@ mod tests {
     use crate::cluster::ClusterGas;
     use crate::orbit::OrbitTable;
     use crate::potentials::{Hernquist, PointMass};
-    use crate::galarp::DensityAt;
+    use crate::analytic::DensityAt;
     use crate::units::G;
     use std::f64::consts::PI;
 

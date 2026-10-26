@@ -11,8 +11,8 @@
 
 use std::{ path::{Path, PathBuf}};
 
-use bigwig_io::config::Config;
-use bigwig_io::snapshot::output_path;
+use galarp_io::config::Config;
+use galarp_io::snapshot::output_path;
 use galarp_run::Run;
 use crate::preview::Preview;
 

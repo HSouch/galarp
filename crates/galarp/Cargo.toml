@@ -1,5 +1,5 @@
 [package]
-name = "bigwig"
+name = "galarp"
 description = "Core SPH library for galaxy wind-tunnel simulations"
 version.workspace = true
 edition.workspace = true

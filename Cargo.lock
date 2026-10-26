@@ -110,28 +110,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
-name = "bigwig"
-version = "0.1.0"
-dependencies = [
- "rand 0.10.3",
- "rand_distr",
- "rand_xoshiro",
- "rayon",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "bigwig-io"
-version = "0.1.0"
-dependencies = [
- "bigwig",
- "hdf5-metno",
- "serde",
- "toml",
-]
-
-[[package]]
 name = "bit-set"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -566,19 +544,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "galarp"
+version = "0.1.0"
+dependencies = [
+ "rand 0.10.3",
+ "rand_distr",
+ "rand_xoshiro",
+ "rayon",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "galarp-io"
+version = "0.1.0"
+dependencies = [
+ "galarp",
+ "hdf5-metno",
+ "serde",
+ "toml",
+]
+
+[[package]]
 name = "galarp-run"
 version = "0.1.0"
 dependencies = [
- "bigwig",
- "bigwig-io",
  "clap",
+ "galarp",
+ "galarp-io",
 ]
 
 [[package]]
 name = "galarp-tui"
 version = "0.1.0"
 dependencies = [
- "bigwig-io",
+ "galarp-io",
  "galarp-run",
  "ratatui",
  "toml_edit 0.22.27",

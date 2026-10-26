@@ -3,8 +3,8 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/bigwig",
-    "crates/bigwig-io",
+    "crates/galarp",
+    "crates/galarp-io",
     "crates/galarp-run",
     "crates/galarp-tui",
 ]
@@ -16,8 +16,8 @@ license = "MIT OR Apache-2.0"
 
 
 [workspace.dependencies]
-bigwig = { path = "crates/bigwig" }
-bigwig-io = { path = "crates/bigwig-io" }
+galarp = { path = "crates/galarp" }
+galarp-io = { path = "crates/galarp-io" }
 rayon = "1.10"
 serde = { version = "1", features = ["derive"] }
 

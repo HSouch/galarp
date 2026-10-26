@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use bigwig_io::config::Config;
+use galarp_io::config::Config;
 use galarp_run::Run;
 
 

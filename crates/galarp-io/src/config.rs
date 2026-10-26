@@ -7,10 +7,10 @@
 use std::fmt;
 use std::path::{Path, PathBuf};
 
-use bigwig::cluster::{hse, BetaModel, ClusterGas, RadialTable};
-use bigwig::orbit::{self, Body, Motion, OrbitTable};
-use bigwig::potentials::{Burkert, Composite, Hernquist, MiyamotoNagai, Nfw, Param, PointMass, Potential};
-use bigwig::units::{self, UNIT_DENSITY_CGS, MSUN, MYR};
+use galarp::cluster::{hse, BetaModel, ClusterGas, RadialTable};
+use galarp::orbit::{self, Body, Motion, OrbitTable};
+use galarp::potentials::{Burkert, Composite, Hernquist, MiyamotoNagai, Nfw, Param, PointMass, Potential};
+use galarp::units::{self, UNIT_DENSITY_CGS, MSUN, MYR};
 use serde::Deserialize;
 
 
@@ -287,7 +287,7 @@ impl Default for DiagnosticsConfig {
 #[serde(deny_unknown_fields, default)]
 pub struct OrbitsConfig {
     /// Each integrated galaxy is also pulled by every other galaxy's potential (see
-    /// `bigwig::orbit::mutual`). Off: each feels only the cluster potential.
+    /// `galarp::orbit::mutual`). Off: each feels only the cluster potential.
     pub mutual_gravity: bool,
 }
 
@@ -585,8 +585,8 @@ fn composite(terms: &[PotentialTerm]) -> Composite {
 
 
 impl Config {
-    pub fn ram_pressure(&self) -> Result<Option<bigwig::galarp::RamPressure>, ConfigError> {
-        use bigwig::galarp::{DensityAt, DynamicShadow, RamPressure};
+    pub fn ram_pressure(&self) -> Result<Option<galarp::analytic::RamPressure>, ConfigError> {
+        use galarp::analytic::{DensityAt, DynamicShadow, RamPressure};
         let rp = &self.ram_pressure;
         if !rp.enabled {
             return Ok(None);
@@ -626,14 +626,14 @@ impl Config {
     }
 
     /// Initial-condition options for galaxy `k`'s disk (self-gravity, noise).
-    pub fn disk_options(&self, k: usize) -> bigwig::ic::DiskOptions {
-        let Some(d) = self.galaxy[k].disk.as_ref() else { return bigwig::ic::DiskOptions::default() };
-        bigwig::ic::DiskOptions { self_gravity: d.include_self_gravity, noise_fraction: d.noise_fraction, noise_seed: d.noise_seed }
+    pub fn disk_options(&self, k: usize) -> galarp::ic::DiskOptions {
+        let Some(d) = self.galaxy[k].disk.as_ref() else { return galarp::ic::DiskOptions::default() };
+        galarp::ic::DiskOptions { self_gravity: d.include_self_gravity, noise_fraction: d.noise_fraction, noise_seed: d.noise_seed }
     }
 
     /// Orientation of galaxy `k` (its disk and potential).
-    pub fn galaxy_orientation(&self, k: usize) -> bigwig::orientation::Orientation {
-        use bigwig::orientation::Orientation;
+    pub fn galaxy_orientation(&self, k: usize) -> galarp::orientation::Orientation {
+        use galarp::orientation::Orientation;
         let g = &self.galaxy[k];
         match (g.disk_normal, g.inclination_deg) {
             (Some(n), _) => Orientation::from_normal(n),
@@ -643,9 +643,9 @@ impl Config {
     }
 
     /// Disk parameters (code units) and cloud count of galaxy `k`, if it has a disk.
-    pub fn disk(&self, k: usize) -> Option<(bigwig::ic::GasDiskParams, usize)> {
+    pub fn disk(&self, k: usize) -> Option<(galarp::ic::GasDiskParams, usize)> {
         let d = self.galaxy[k].disk.as_ref()?;
-        let params = bigwig::ic::GasDiskParams {
+        let params = galarp::ic::GasDiskParams {
             mass: d.mass_msun * MSUN,
             scale_length: d.scale_length_kpc,
             r_max: d.r_max_kpc,
@@ -911,7 +911,7 @@ mod tests {
         assert!(parse(&no_count).unwrap_err().0.contains("n_particles"));
     }
 
-    /// SPH-only sections of bigwig-vibe configs are not part of this schema.
+    /// SPH-only sections are not part of this schema.
     #[test]
     fn full_sph_sections_are_rejected() {
         for extra in ["[self_gravity]\nenabled = true\n", "[cooling]\nenabled = true\n", "[glass]\nn_particles = 100\n", "[feedback]\nenabled = true\n"] {

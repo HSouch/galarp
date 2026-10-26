@@ -1,4 +1,4 @@
-use bigwig_io::config::{ Config, ClusterGasConfig };
+use galarp_io::config::{ Config, ClusterGasConfig };
 
 
 pub struct Preview {
@@ -20,8 +20,8 @@ const SAMPLES: usize = 400;
 
 impl Preview {
     pub fn new(cfg: &Config) -> Result<Self, String> {
-        let rows = bigwig_io::preview::preview(cfg, SAMPLES).map_err(|e| e.0)?;
-        let normal = bigwig_io::preview::disk_normal(cfg, 0);
+        let rows = galarp_io::preview::preview(cfg, SAMPLES).map_err(|e| e.0)?;
+        let normal = galarp_io::preview::disk_normal(cfg, 0);
         let rows: Vec<_> = rows.into_iter().filter(|r| r.galaxy == 0).collect();
         let r_c_kpc = match cfg.cluster.gas {
             ClusterGasConfig::Beta { r_c_kpc, .. } => Some(r_c_kpc),
