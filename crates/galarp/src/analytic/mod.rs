@@ -1,4 +1,4 @@
-//! Main GalaRP functionality. Essentiall "restricted ram pressure"
+//! Main GalaRP functionality.
 
 
 pub mod clouds;
