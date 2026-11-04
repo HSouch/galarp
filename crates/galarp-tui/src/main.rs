@@ -4,6 +4,8 @@ use ratatui::crossterm::event::{ self, Event, KeyCode, KeyEventKind };
 use ratatui::DefaultTerminal;
 use ratatui::widgets::{Block, Paragraph};
 
+mod app;
+mod ui;
 
 fn main() -> std::io::Result<()> {
     let mut terminal = ratatui::init();
