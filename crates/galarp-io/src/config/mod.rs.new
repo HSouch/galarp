@@ -1,0 +1,239 @@
+//! TOML configuration files for GalaRP: reading and validation.
+//!
+//! One file per section of the config, each laid out as schema, defaults, validation,
+//! then conversion to code units:
+//!
+//! | file              | sections                                             |
+//! |-------------------|------------------------------------------------------|
+//! | `run.rs`          | `[run]`, `[hydro]`, `[box]`, `[galarp]`, `[diagnostics]` |
+//! | `cluster.rs`      | `[cluster]`, `[cluster.gas]`                         |
+//! | `galaxy.rs`       | `[[galaxy]]`, `[galaxy.disk]`                        |
+//! | `orbit.rs`        | `[galaxy.orbit]`, `[orbits]`                         |
+//! | `potential.rs`    | `[[galaxy.potential]]`, `[[cluster.potential]]`      |
+//! | `param.rs`        | `ParamSpec`: a number or a table in time             |
+//! | `ram_pressure.rs` | `[ram_pressure]`, `[ram_pressure.shadow]`            |
+//!
+//! This file holds the top-level `Config`, loading, and the rules that involve more
+//! than one section.
+
+use std::fmt;
+use std::path::{Path, PathBuf};
+
+use galarp::cluster::ClusterGas;
+use galarp::potentials::Composite;
+use serde::Deserialize;
+
+mod cluster;
+mod galaxy;
+mod orbit;
+mod param;
+mod potential;
+mod ram_pressure;
+mod run;
+#[cfg(test)]
+mod tests;
+
+pub use cluster::{ClusterConfig, ClusterGasConfig};
+pub use galaxy::{DiskConfig, GalaxyConfig};
+pub use orbit::{OrbitConfig, OrbitsConfig};
+pub use param::ParamSpec;
+pub use potential::PotentialTerm;
+pub use ram_pressure::{RamPressureConfig, ShadowConfig};
+pub use run::{BoxSection, DiagnosticsConfig, GalaRPConfig, HydroConfig, RunConfig};
+
+use potential::composite;
+use run::d_mu;
+
+// ---------------------------------------------------------------------------
+// Errors and validation helpers (used by every section file)
+// ---------------------------------------------------------------------------
+
+#[derive(Debug)]
+pub struct ConfigError(pub String);
+
+impl fmt::Display for ConfigError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl std::error::Error for ConfigError {}
+
+impl ConfigError {
+    /// Prefixes the message with where the error is, e.g. "galaxy 1 (companion)".
+    fn at(self, prefix: impl fmt::Display) -> Self {
+        ConfigError(format!("{prefix}: {}", self.0))
+    }
+}
+
+fn err<T>(msg: impl Into<String>) -> Result<T, ConfigError> {
+    Err(ConfigError(msg.into()))
+}
+
+/// `Ok` if `v` is positive and finite.
+fn positive(name: &str, v: f64) -> Result<(), ConfigError> {
+    if v > 0.0 && v.is_finite() { Ok(()) } else { err(format!("{name} must be positive, got {v}")) }
+}
+
+// ---------------------------------------------------------------------------
+// The whole config
+// ---------------------------------------------------------------------------
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Config {
+    pub run: RunConfig,
+
+    #[serde(default)]
+    pub hydro: HydroConfig,
+
+    #[serde(rename = "box")]
+    pub box_: BoxSection,
+
+    pub cluster: ClusterConfig,
+
+    pub galaxy: Vec<GalaxyConfig>,
+
+    #[serde(default)]
+    pub diagnostics: DiagnosticsConfig,
+
+    #[serde(default)]
+    pub orbits: OrbitsConfig,
+
+    /// Analytic ram-pressure wind on the clouds.
+    #[serde(default)]
+    pub ram_pressure: RamPressureConfig,
+
+    #[serde(default)]
+    pub galarp: GalaRPConfig,
+
+    /// A copy of the run's state appended to each output's config.
+    /// Ignored on input, so such a copy can still be read.
+    #[serde(default)]
+    pub output: Option<toml::Table>,
+}
+
+// ---------------------------------------------------------------------------
+// Loading
+// ---------------------------------------------------------------------------
+
+impl Config {
+    /// Parses and validates `text`. Relative file paths in it are taken from `base_dir`.
+    pub fn from_str_in(text: &str, base_dir: &Path) -> Result<Self, ConfigError> {
+        let mut cfg: Config = toml::from_str(text).map_err(|e| ConfigError(format!("config: {e}")))?;
+        cfg.resolve_paths(base_dir);
+        cfg.validate()?;
+        Ok(cfg)
+    }
+
+    pub fn from_file(path: impl AsRef<Path>) -> Result<Self, ConfigError> {
+        let path = path.as_ref();
+        let text = std::fs::read_to_string(path).map_err(|e| ConfigError(format!("{}: {e}", path.display())))?;
+        let base = path.parent().unwrap_or(Path::new("."));
+        Self::from_str_in(&text, base).map_err(|e| e.at(path.display()))
+    }
+
+    /// Makes every file path in the config (gas profile, orbit tables) relative to `base_dir`.
+    fn resolve_paths(&mut self, base_dir: &Path) {
+        let resolve = |p: &mut PathBuf| {
+            if p.is_relative() {
+                *p = base_dir.join(&*p);
+            }
+        };
+        if let ClusterGasConfig::Table { file, .. } = &mut self.cluster.gas {
+            resolve(file);
+        }
+        for g in &mut self.galaxy {
+            if let OrbitConfig::Table { file } = &mut g.orbit {
+                resolve(file);
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Validation
+// ---------------------------------------------------------------------------
+
+impl Config {
+    fn validate(&self) -> Result<(), ConfigError> {
+        // Each section on its own.
+        self.run.validate()?;
+        self.box_.validate()?;
+        self.hydro.validate()?;
+        if self.galaxy.is_empty() {
+            return err("at least one [[galaxy]] is required; the first is the parent");
+        }
+        if self.galaxy.len() > u16::MAX as usize {
+            return err("too many galaxies");
+        }
+        for (k, g) in self.galaxy.iter().enumerate() {
+            g.validate().map_err(|e| e.at(format!("galaxy {k} ({})", g.label(k))))?;
+        }
+        self.cluster.validate()?;
+        self.ram_pressure.validate()?;
+        self.galarp.validate()?;
+
+        // Rules that involve more than one section.
+        self.check_cluster_potential_needed()?;
+        if self.ram_pressure.enabled && matches!(self.cluster.gas, ClusterGasConfig::None) {
+            return err("ram_pressure needs ICM gas: [cluster.gas] model = \"none\" has no density");
+        }
+        Ok(())
+    }
+
+    /// Hydrostatic gas models need a cluster potential, and so does an integrated orbit
+    /// unless other galaxies pull on it (mutual gravity with more than one galaxy).
+    fn check_cluster_potential_needed(&self) -> Result<(), ConfigError> {
+        let pulled_by_galaxies = self.orbits.mutual_gravity && self.galaxy.len() > 1;
+        let needs_cluster_potential = self.cluster.gas.needs_potential()
+            || (!pulled_by_galaxies && self.galaxy.iter().any(|g| g.orbit.is_integrated()));
+        if needs_cluster_potential && self.cluster.potential.is_empty() {
+            return err("this cluster gas model or orbit mode needs [[cluster.potential]] terms");
+        }
+        Ok(())
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Accessors used by galarp-run, galarp-tui and preview.rs. Each forwards to its
+// section; the time helpers are in run.rs, `ram_pressure` in ram_pressure.rs and
+// `orbit_table(s)` in orbit.rs.
+// ---------------------------------------------------------------------------
+
+impl Config {
+    /// Label of galaxy `k`: its `name`, or "galaxy k".
+    pub fn galaxy_name(&self, k: usize) -> String {
+        self.galaxy[k].label(k)
+    }
+
+    /// Initial-condition options for galaxy `k`'s disk (self-gravity, noise).
+    pub fn disk_options(&self, k: usize) -> galarp::ic::DiskOptions {
+        self.galaxy[k].disk_options()
+    }
+
+    /// Orientation of galaxy `k` (its disk and potential).
+    pub fn galaxy_orientation(&self, k: usize) -> galarp::orientation::Orientation {
+        self.galaxy[k].orientation()
+    }
+
+    /// Disk parameters (code units) and cloud count of galaxy `k`, if it has a disk.
+    pub fn disk(&self, k: usize) -> Option<(galarp::ic::GasDiskParams, usize)> {
+        self.galaxy[k].disk.as_ref().map(|d| (d.params(), d.n_particles))
+    }
+
+    /// Potential of galaxy `k` (0 = parent).
+    pub fn galaxy_potential(&self, k: usize) -> Composite {
+        self.galaxy[k].build_potential()
+    }
+
+    /// Cluster potential, or `None` if no terms are given.
+    pub fn cluster_potential(&self) -> Option<Composite> {
+        self.cluster.build_potential()
+    }
+
+    /// The ICM in code units.
+    pub fn cluster_gas(&self) -> Result<ClusterGas, ConfigError> {
+        self.cluster.build_gas(self.hydro.gamma)
+    }
+}
