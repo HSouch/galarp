@@ -5,15 +5,14 @@ use ratatui::DefaultTerminal;
 
 
 mod app;
-mod editor;
 mod form;
 mod plots;
 mod preview;
+mod tabs;
 mod ui;
 pub use app::{App, Tab};
 
-// Tabs
-mod configs;
+
 
 use std::time::Duration;
 

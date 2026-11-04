@@ -4,8 +4,10 @@ use std::collections::HashMap;
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::ListState;
-use crate::configs::{self, Check};
-use crate::editor::Editor;
+
+use crate::tabs::configs::{self, Check};
+use crate::tabs::editor::Editor;
+
 use crate::form::{ConfigDoc}; // , Row, Seg, Validation};
 
 
