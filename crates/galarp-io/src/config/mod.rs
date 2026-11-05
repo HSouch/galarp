@@ -231,9 +231,6 @@ pub const CORE: &[(&str, &[(&str, &str)])] = &[
             ("run.t_end_myr", "end time"),
             ("run.dt_max_myr", "log interval; a whole multiple of restricted.dt_myr"),
             ("run.snapshot_interval_myr", "snapshot interval; a whole multiple of run.dt_max_myr"),
-            ("restricted.dt_myr", "RK4 step"),
-            ("restricted.vertical_dispersion_km_s", "cloud sigma_z (default: the disk's sound speed)"),
-            ("restricted.seed", "seed of the vertical velocities"),
         ],
     ),
     (
