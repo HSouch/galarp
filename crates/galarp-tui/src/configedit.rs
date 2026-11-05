@@ -63,7 +63,7 @@ impl ConfigDoc {
             saved: doc.clone(), 
             doc, 
             rows:Vec::new() };
-        
+        c.build_rows();
         Ok(c)
     }
 
