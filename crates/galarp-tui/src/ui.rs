@@ -9,6 +9,7 @@ use ratatui::widgets::{Block, Clear, List, Paragraph, Tabs, Wrap};
 use ratatui::Frame;
 
 use crate::app::{App, Mode, Tab};
+use crate::configedit::{path_string, Row};
 
 
 pub fn draw(frame: &mut Frame, app: &mut App) {
@@ -32,6 +33,8 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
 
     match app.tab {
         Tab::Configs => draw_configs(frame, body, app),
+        Tab::Edit => draw_edit(frame, body, app),
+       
         _ => placeholder(frame, body, "not built yet"),
     }
 
@@ -128,6 +131,87 @@ fn draw_configs(frame: &mut Frame, area: Rect, app: &mut App) {
         Paragraph::new(check.text.clone()).block(Block::bordered().title(" Config File ")), 
         text);
 
+}
+
+
+fn draw_edit(frame: &mut Frame, area: Rect, app: &mut App) {
+    let Some(editor) = app.editor.as_mut() else {
+        placeholder(frame, area, "Open config file from Configs tab");
+        return;
+    };
+
+    let [left, right] = Layout::horizontal([
+        Constraint::Percentage(50),
+        Constraint::Percentage(50)
+    ]).areas(area);
+
+    let [form, help] = Layout::vertical([
+            Constraint::Min(0),
+            Constraint::Length(5)
+    ]).areas(left);
+    
+    
+    let width = editor.doc.rows.iter()
+        .filter_map(|r| if let Row::Field { path, .. } = r 
+            { Some(path_string(path).len())} else {None})
+        .max()
+        .unwrap_or(0);
+    
+    let items: Vec<Line> = editor.doc.rows.iter()
+        .map(|row| match row {
+            Row::Header(h) => Line::from(format!("-- {h} ")).bold(),
+            Row::Field { path, .. } => {
+                let key = format!("{:width$}  ", path_string(path));
+                let (value, style) = match editor.doc.value(path) {
+                    None => ("default".to_string(), Style::new().dim()),
+                    Some(v) if editor.doc.changed(path) => (format!("{v} *"), Style::new().fg(Color::Yellow)),
+                    Some(v) => (v, Style::new()),
+                };
+                Line::from(vec![Span::raw(key), Span::styled(value, style)])
+            }
+        })
+        .collect();
+
+    let title = format!(" {}{} ", editor.doc.name(), if editor.doc.not_pristine() { " [modified] "} else { ""});
+
+    let list = List::new(items).block(Block::bordered().title(title))
+        .highlight_style(Style::new().reversed());
+
+    frame.render_stateful_widget(list, form, &mut editor.list);
+
+    let help_text = match editor.list.selected().and_then(|i| editor.doc.rows.get(i)) {
+        Some(Row::Field{ help, .. }) => help.to_string(),
+        _ => String::new(),
+    };
+    frame.render_widget(Paragraph::new(help_text).dim()
+        .wrap(Wrap { trim: true}).block(Block::bordered()), 
+        help);
+
+    
+    
+    let [summary, text] = Layout::vertical([
+        Constraint::Length(10),
+        Constraint::Min(0),
+    ]).areas(right);
+
+    let v = &editor.validation;
+    let (mut lines, color): (Vec<Line>, _) = match &v.result {
+        Ok(lines) => (lines.iter().map(|l| Line::raw(l.clone())).collect(), Color::Green),
+        Err(e) => (vec![Line::raw(e.clone())], Color::Red)
+    };
+
+    if !v.output_dir.as_os_str().is_empty() {
+        lines.push(Line::raw(""));
+        lines.push(Line::raw(format!("output: {}", v.output_dir.display())));
+        if v.output_has_snapshots {
+            lines.push(Line::from("  already has snapshots. A run would overwrite them.".fg(Color::Yellow)));
+        }
+    }
+
+    let summary_block = Block::bordered().title("  Dry Run  ").border_style(Style::new().fg(color));
+    frame.render_widget(Paragraph::new(lines).wrap(Wrap {trim: false}).block(summary_block), summary);
+    
+    frame.render_widget(Paragraph::new(editor.doc.text()).block(Block::bordered().title(" toml")), text);
 }
 
 
