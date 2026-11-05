@@ -1,12 +1,12 @@
 use std::collections::HashMap;
-use std::hash::Hash;
 use std::path::{Path, PathBuf};
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::ListState;
 
-use crate::app::Mode::Normal;
+use crate::configedit::{ConfigDoc, Segment};
 use crate::tabs::configs::{self, Check};
+use crate::tabs::editor::Editor;
 
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -56,11 +56,14 @@ pub struct App {
     pub tab: Tab,
     pub mode: Mode,
 
+    pub message: Option<(String, bool)>,
+
     pub cwd: PathBuf,
     pub files: Vec<PathBuf>,
     pub list: ListState,
 
     checks: HashMap<PathBuf, Check>,
+    pub editor: Option<Editor>,
 }
 
 
@@ -73,10 +76,12 @@ impl App {
             quit: false,
             tab: Tab::Configs,
             mode: Mode::Normal,
+            message: None,
             cwd,
             files,
             list,
             checks: HashMap::new(),
+            editor: None,
         }
     }
 
@@ -99,8 +104,13 @@ impl App {
         p.strip_prefix(&self.cwd).unwrap_or(p).to_string_lossy()
     }
 
+    fn error(&mut self, msg: impl Into<String>) {
+        self.message = Some((msg.into(), true));
+    }
 
     pub fn on_key(&mut self, key: KeyEvent) {
+        self.message = None;       // Erase status message on next key press.
+
         match std::mem::replace(&mut self.mode, Mode::Normal) {
             Mode::Normal => self.on_normal_key(key),
             Mode::Help => { self.mode = Mode::Normal },
@@ -118,8 +128,45 @@ impl App {
             KeyCode::BackTab => self.tab = Tab::ALL[(self.tab.index() + Tab::ALL.len() - 1) % Tab::ALL.len()],
             _ => match self.tab {
                 Tab::Configs => self.on_configs_key(key),
+                Tab::Edit => self.on_edit_key(key),
                 _ => {}
             },
+        }
+    }    
+
+    fn on_edit_key(&mut self, key: KeyEvent) {
+        let Some(ed) = self.editor.as_mut() else { return };
+
+        match key.code {
+            KeyCode::Down | KeyCode::Char('j') => ed.move_by(1),
+            KeyCode::Up | KeyCode::Char('k') => ed.move_by(-1),
+            KeyCode::PageDown => ed.move_by(10),
+            KeyCode::PageUp => ed.move_by(-10),
+            
+            KeyCode::Enter | KeyCode::Char(' ') => {
+                let Some(path) = ed.selected_path().map(<[Segment]>::to_vec) else { return };
+                match ed.doc.toggle(&path) {
+                    Ok(true) => ed.revalidate(),
+                    Ok(false) => {},
+                    Err(e) => self.error(e),
+                }
+            }
+
+            KeyCode::Delete | KeyCode::Char('d') => {
+                let Some(path) = ed.selected_path().map(<[Segment]>::to_vec) else { return };
+                self.commit_field(&path, "");
+            },
+            
+            _ => {},
+        }
+    }
+
+
+    fn commit_field(&mut self, path: &[Segment], text: &str) {
+        let Some(ed) = self.editor.as_mut() else { return };
+        match ed.doc.set(path, text) {
+            Ok(()) => ed.revalidate(),
+            Err(e) => self.error(e),
         }
     }
 
@@ -131,7 +178,24 @@ impl App {
             KeyCode::Home | KeyCode::Char('g') => self.list.select_first(),
             KeyCode::End | KeyCode::Char('G') => self.list.select_last(),
             KeyCode::Char('r') => self.rescan(),
+            
+            KeyCode::Enter | KeyCode::Char('l') | KeyCode::Right => {
+                let Some(path) = self.selected().cloned() else { return };
+                self.open(&path);
+            }
+
             _ => {},
+        }
+    }
+
+    /// Loads `path` into the form and switches to the Edit tab.
+    fn open(&mut self, path: &Path) {
+        match ConfigDoc::load(path) {
+            Ok(doc) => {
+                self.editor = Some(Editor::new(doc));
+                self.tab = Tab::Edit;
+            }
+            Err(e) => self.error(e),
         }
     }
     
