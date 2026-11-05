@@ -7,6 +7,7 @@ use ratatui::DefaultTerminal;
 
 mod app;
 mod configedit;
+mod input;
 mod tabs;
 mod ui;
 
