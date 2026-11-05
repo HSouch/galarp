@@ -5,6 +5,7 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::ListState;
 
 use crate::configedit::{ConfigDoc, Segment};
+use crate::input::LineInput;
 use crate::tabs::configs::{self, Check};
 use crate::tabs::editor::Editor;
 
@@ -47,7 +48,8 @@ impl Tab {
 /// If you're in Normal mode, `q` will quit.
 pub enum Mode {
     Normal,
-    Help
+    Help,
+    EditField {path: Vec<Segment>, input: LineInput},
 }
 
 
@@ -114,6 +116,14 @@ impl App {
         match std::mem::replace(&mut self.mode, Mode::Normal) {
             Mode::Normal => self.on_normal_key(key),
             Mode::Help => { self.mode = Mode::Normal },
+            Mode::EditField { path, mut input } => match key.code {
+                KeyCode::Esc => {},
+                KeyCode::Enter => self.commit_field(&path, &input.text),
+                _ => {
+                    input.on_key(key);
+                    self.mode = Mode::EditField { path, input };
+                }
+            },
         }
     }
 
@@ -147,7 +157,10 @@ impl App {
                 let Some(path) = ed.selected_path().map(<[Segment]>::to_vec) else { return };
                 match ed.doc.toggle(&path) {
                     Ok(true) => ed.revalidate(),
-                    Ok(false) => {},
+                    Ok(false) => {
+                        let current = ed.doc.value(&path).unwrap_or_default();
+                        self.mode = Mode::EditField { path, input: LineInput::new(current)}
+                    },
                     Err(e) => self.error(e),
                 }
             }

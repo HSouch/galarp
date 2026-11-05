@@ -40,27 +40,17 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
 
     draw_status(frame, status,app);
 
-    match app.mode {
+    match &app.mode {
         Mode::Normal => {},
+        
+        Mode::EditField { path, input } => {
+            draw_input(frame, &path_string(path), &input.text, input.cursor)
+        }
+        
         Mode::Help => draw_help_popup(frame),
+
     }
 
-}
-
-
-fn popup(frame: &mut Frame, width: u16, height: u16) -> Rect {
-    let [area] = Layout::horizontal(
-        [Constraint::Length(width)]).flex(Flex::Center).areas(frame.area());
-    let [area] = Layout::vertical([Constraint::Length(height)]).flex(Flex::Center).areas(area);
-    
-    // First render everything in the area clear
-    clear_area(frame, area);
-    area
-}
-
-
-fn clear_area(frame: &mut Frame, area: Rect) {
-    frame.render_widget(Clear, area);
 }
 
 
@@ -224,6 +214,37 @@ fn draw_status(frame: &mut Frame, area: Rect, app: &App) {
         Span::raw("Tab switch   q quit").dim()]);
     
     frame.render_widget(line, area);
+}
+
+
+fn draw_input(frame: &mut Frame, title: &str, text: &str, cursor: usize) {
+    let width = (frame.area().width.saturating_sub(4)).min(80);
+
+    let area = popup(frame, width, 3);
+
+    let block = Block::bordered().title(format!(" {title} ")).border_style(Style::new().fg(Color::Cyan));
+    let inner = block.inner(area);
+
+    let scroll = (cursor as u16).saturating_sub(inner.width.saturating_sub(1));
+
+    frame.render_widget(Paragraph::new(text.to_string()).scroll((0, scroll)).block(block), area);
+    frame.set_cursor_position((inner.x + cursor as u16 - scroll, inner.y));
+}
+
+
+fn popup(frame: &mut Frame, width: u16, height: u16) -> Rect {
+    let [area] = Layout::horizontal(
+        [Constraint::Length(width)]).flex(Flex::Center).areas(frame.area());
+    let [area] = Layout::vertical([Constraint::Length(height)]).flex(Flex::Center).areas(area);
+    
+    // First render everything in the area clear
+    clear_area(frame, area);
+    area
+}
+
+
+fn clear_area(frame: &mut Frame, area: Rect) {
+    frame.render_widget(Clear, area);
 }
 
 
