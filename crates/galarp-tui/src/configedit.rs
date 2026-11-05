@@ -113,7 +113,6 @@ impl ConfigDoc {
 
     }
 
-
     pub fn set(&mut self, path: &[Segment], input: &str) -> Result<(), String> {
         let input = input.trim();
         let value = if input.is_empty() {
@@ -146,6 +145,17 @@ impl ConfigDoc {
         Ok(true)
     }
 
+    /// Writes document, and makes written path the doc's path.
+    /// Also makes the written text the `saved` copy.
+    pub fn save_as(&mut self, path: &Path) -> Result<(), String> {
+        std::fs::write(path, self.doc.to_string())
+            .map_err(|e| format!("{}: {e}", path.display()))?;
+
+        self.path = path.to_path_buf();
+        self.saved = self.doc.clone();
+        Ok(())
+    }
+
     pub fn validate(&self) -> Validation {
         let base = self.path.parent().unwrap_or(Path::new("."));
         let text = self.text();
@@ -169,6 +179,11 @@ impl ConfigDoc {
 
         Validation { result, output_dir, output_has_snapshots }
         
+    }
+
+    /// Value at `path` if it is a string, without quotes.
+    pub fn str_value(&self, path: &[Segment]) -> Option<String> {
+        get(&self.doc, path).and_then(Item::as_str).map(String::from)
     }
 }
 
