@@ -2,13 +2,13 @@
 //! 
 
 
-use ratatui::layout::{Constraint, Layout, Rect};
-use ratatui::style::{Color, Style, Stylize};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, List, Paragraph, Tabs, Wrap};
+use ratatui::layout::{Constraint, Flex, Layout, Rect};
+use ratatui::style::{Color, Modifier, Style, Stylize};
+use ratatui::text::{Line, Span, Text};
+use ratatui::widgets::{Block, Clear, List, Paragraph, Tabs, Wrap};
 use ratatui::Frame;
 
-use crate::app::{App, Tab};
+use crate::app::{App, Mode, Tab};
 
 
 pub fn draw(frame: &mut Frame, app: &mut App) {
@@ -36,6 +36,51 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     }
 
     draw_status(frame, status,app);
+
+    match app.mode {
+        Mode::Normal => {},
+        Mode::Help => draw_help_popup(frame),
+    }
+
+}
+
+
+fn popup(frame: &mut Frame, width: u16, height: u16) -> Rect {
+    let [area] = Layout::horizontal(
+        [Constraint::Length(width)]).flex(Flex::Center).areas(frame.area());
+    let [area] = Layout::vertical([Constraint::Length(height)]).flex(Flex::Center).areas(area);
+    
+    // First render everything in the area clear
+    clear_area(frame, area);
+    area
+}
+
+
+fn clear_area(frame: &mut Frame, area: Rect) {
+    frame.render_widget(Clear, area);
+}
+
+
+fn draw_help_popup(frame: &mut Frame) {
+    let text = Text::from(vec![
+        Line::from("galarp-tui".add_modifier(Modifier::BOLD)),
+        Line::raw(""),
+        Line::raw("Tab / Shift-Tab switch tabs"),
+        Line::raw("↑↓ or j k move"),
+        Line::raw("g / G first / last"),
+        Line::raw(""),
+        Line::from("Configs".bold()),
+        Line::raw("r reload the config list"),
+        Line::raw(""),
+        Line::raw("? this help"),
+        Line::raw("q quit"),
+        Line::raw(""),
+        Line::from("any key closes this".dim()),]);
+        let area = popup(frame, 48, text.height() as u16 + 2);
+
+    frame.render_widget(
+        Paragraph::new(text).block(Block::bordered().title(" Help and Commands ")),
+        area);
 }
 
 
@@ -82,8 +127,6 @@ fn draw_configs(frame: &mut Frame, area: Rect, app: &mut App) {
     frame.render_widget(
         Paragraph::new(check.text.clone()).block(Block::bordered().title(" Config File ")), 
         text);
-
-
 
 }
 

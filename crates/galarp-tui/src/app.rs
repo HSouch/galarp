@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::ListState;
 
+use crate::app::Mode::Normal;
 use crate::tabs::configs::{self, Check};
 
 
@@ -42,10 +43,18 @@ impl Tab {
     }
 }
 
+/// What mode keystrokes go to.
+/// If you're in Normal mode, `q` will quit.
+pub enum Mode {
+    Normal,
+    Help
+}
+
 
 pub struct App {
     pub quit: bool,
     pub tab: Tab,
+    pub mode: Mode,
 
     pub cwd: PathBuf,
     pub files: Vec<PathBuf>,
@@ -63,6 +72,7 @@ impl App {
         Self {
             quit: false,
             tab: Tab::Configs,
+            mode: Mode::Normal,
             cwd,
             files,
             list,
@@ -91,8 +101,19 @@ impl App {
 
 
     pub fn on_key(&mut self, key: KeyEvent) {
+        match std::mem::replace(&mut self.mode, Mode::Normal) {
+            Mode::Normal => self.on_normal_key(key),
+            Mode::Help => { self.mode = Mode::Normal },
+        }
+    }
+
+    fn on_normal_key(&mut self, key: KeyEvent) {
         match key.code {
+            // q sets mode to quit (will might want to ask for saving later)
             KeyCode::Char('q') => self.quit = true,
+            // ? opens a help popup
+            KeyCode::Char('?') => self.mode = Mode::Help,
+            // Tab and backtab advance tabs around
             KeyCode::Tab => self.tab = Tab::ALL[(self.tab.index() + 1) % Tab::ALL.len()],
             KeyCode::BackTab => self.tab = Tab::ALL[(self.tab.index() + Tab::ALL.len() - 1) % Tab::ALL.len()],
             _ => match self.tab {
