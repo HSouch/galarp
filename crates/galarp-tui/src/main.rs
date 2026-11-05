@@ -1,36 +1,38 @@
 
 
-use ratatui::crossterm::event::{ self, Event, KeyCode, KeyEventKind };
+use std::time::Duration;
+
+use ratatui::crossterm::event::{ self, Event, KeyEventKind };
 use ratatui::DefaultTerminal;
-use ratatui::widgets::{Block, Paragraph};
 
 mod app;
+mod tabs;
 mod ui;
 
 fn main() -> std::io::Result<()> {
+    let mut app = app::App::new(std::env::current_dir()?);
+
     let mut terminal = ratatui::init();
 
-    let result = run(&mut terminal);
+    let result = run(&mut terminal, &mut app);
 
     ratatui::restore();
     result
 }
 
 
-fn run(terminal: &mut DefaultTerminal) -> std::io::Result<()> {
-    loop {
-        terminal.draw(|frame| {
-            let hello = Paragraph::new("Hello from GalaRP")
-            .centered()
-            .block(Block::bordered().title(" GalaRP TUI"));
+fn run(terminal: &mut DefaultTerminal, app: &mut app::App) -> std::io::Result<()> {
+    while !app.quit {
+        terminal.draw(|frame| ui::draw(frame, app))?;
 
-            frame.render_widget(hello, frame.area());
-        })?;
-
-        if let Event::Key(key) = event::read()? {
-            if key.kind == KeyEventKind::Press && key.code == KeyCode::Char('q') {
-                return Ok(())
+        if event::poll(Duration::from_millis(50))? {
+            if let Event::Key(key) = event::read()? {
+                if key.kind == KeyEventKind::Press {
+                    app.on_key(key);
+                }
             }
         }
     }
+
+    Ok(())
 }
