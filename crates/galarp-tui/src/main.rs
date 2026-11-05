@@ -6,6 +6,7 @@ use ratatui::crossterm::event::{ self, Event, KeyEventKind };
 use ratatui::DefaultTerminal;
 
 mod app;
+mod configedit;
 mod tabs;
 mod ui;
 
