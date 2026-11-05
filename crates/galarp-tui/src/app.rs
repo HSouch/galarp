@@ -1,10 +1,11 @@
-
+use std::collections::HashMap;
+use std::hash::Hash;
 use std::path::{Path, PathBuf};
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::ListState;
 
-use crate::tabs::configs;
+use crate::tabs::configs::{self, Check};
 
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -49,6 +50,8 @@ pub struct App {
     pub cwd: PathBuf,
     pub files: Vec<PathBuf>,
     pub list: ListState,
+
+    checks: HashMap<PathBuf, Check>,
 }
 
 
@@ -62,7 +65,8 @@ impl App {
             tab: Tab::Configs,
             cwd,
             files,
-            list
+            list,
+            checks: HashMap::new(),
         }
     }
 
@@ -70,6 +74,12 @@ impl App {
     /// Turn list index back into a path
     pub fn selected(&self) -> Option<&PathBuf> {
         self.list.selected().and_then(|i| self.files.get(i))
+    }
+
+
+    pub fn selected_check(&mut self) -> Option<&Check> {
+        let path = self.selected()?.clone();
+        Some(self.checks.entry(path.clone()).or_insert_with(|| configs::check(&path)))
     }
 
 
@@ -107,6 +117,7 @@ impl App {
 
     fn rescan(&mut self) {
         self.files = configs::find(&self.cwd);
+        self.checks.clear();
         self.list.select((!self.files.is_empty()).then_some(0));
     }
 }

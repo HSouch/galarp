@@ -1,11 +1,11 @@
-//! UI drawing
+//! UI drawing functions and utilities
 //! 
 
 
 use ratatui::layout::{Constraint, Layout, Rect};
-use ratatui::style::{Style, Stylize};
+use ratatui::style::{Color, Style, Stylize};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, List, Paragraph, Tabs};
+use ratatui::widgets::{Block, List, Paragraph, Tabs, Wrap};
 use ratatui::Frame;
 
 use crate::app::{App, Tab};
@@ -53,19 +53,36 @@ fn draw_configs(frame: &mut Frame, area: Rect, app: &mut App) {
     let list = List::new(items)
         .block(Block::bordered().title(title))
         .highlight_style(Style::new().reversed())
-
         .highlight_symbol("> ");
-
     frame.render_stateful_widget(list, left, &mut app.list);
 
-    let Some(path) = app.selected() else {
-        placeholder(frame, right, "no *.toml found here or in configs/");
+    
+    let [summary, text] = Layout::vertical([
+        Constraint::Length(9),
+        Constraint::Min(0),
+    ]).areas(right);
+
+    let Some(check) = app.selected_check() else {
+        placeholder(frame, right, "no .toml here or in configs/");
         return;
     };
+    
+    let (lines, color) = match &check.summary {
+        Ok(lines) => (lines.iter().map(|l| Line::raw(l.clone())).collect(), Color::Green),
+        Err(e) => (vec![Line::raw(e.clone())], Color::Red)
+    };
 
-    let text = std::fs::read_to_string(path).unwrap_or_else(|e| format!("can't read: {e}"));
+    let summary_block = Block::bordered().title(" Run Summary ")
+        .border_style(Style::new().fg(color));
 
-    frame.render_widget(Paragraph::new(text).block(Block::bordered().title(" file ")), right);
+    frame.render_widget(
+        Paragraph::new(lines).block(summary_block).wrap(Wrap{trim: false}),  
+        summary);
+
+    frame.render_widget(
+        Paragraph::new(check.text.clone()).block(Block::bordered().title(" Config File ")), 
+        text);
+
 
 
 }
