@@ -10,6 +10,8 @@ mod configedit;
 mod input;
 mod plotting;
 mod preview;
+mod sim_runner;
+mod sim_viewer;
 mod tabs;
 mod ui;
 
