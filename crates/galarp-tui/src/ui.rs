@@ -214,13 +214,22 @@ fn draw_edit(frame: &mut Frame, area: Rect, app: &mut App) {
 
 
 fn draw_status(frame: &mut Frame, area: Rect, app: &App) {
-    let keys = match app.tab {
-        Tab::Configs => "Arrow-keys move   r reload",
-        _ => "",
+    let line = if let Some((msg, is_error)) = &app.message {
+        Line::from(format!(" {msg}").fg(if *is_error { Color::Red } else { Color::Green }))
+    } else {
+        let keys = match (&app.mode, app.tab) {
+            (Mode::EditField { .. }, _) => "Enter set  Esc cancel  (empty: back to the default)",
+            (Mode::SaveAs { .. }, _) => "Enter save  Esc cancel",
+            (Mode::Confirm { .. }, _) => "y yes  n no",
+            (_, Tab::Configs) => "↑↓/jk move  Enter open  r reload",
+            (_, Tab::Edit) => "↑↓/jk move  Enter edit/toggle  d default  w save",
+            _ => "",
+        };
+        Line::from(vec![
+            Span::raw(format!(" {keys}  ")), 
+            Span::raw("Tab switch  ? help  q quit").dim()
+        ])
     };
-    let line = Line::from(vec![Span::raw(format!(" {keys}   ")), 
-        Span::raw("Tab switch   q quit").dim()]);
-    
     frame.render_widget(line, area);
 }
 
