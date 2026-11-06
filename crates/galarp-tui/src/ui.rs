@@ -10,6 +10,9 @@ use ratatui::Frame;
 
 use crate::app::{App, Mode, Tab};
 use crate::configedit::{path_string, Row};
+use crate::plotting;
+use crate::plotting::timeseries::{self, YAxis};
+use crate::preview::Preview;
 
 
 pub fn draw(frame: &mut Frame, app: &mut App) {
@@ -187,9 +190,10 @@ fn draw_edit(frame: &mut Frame, area: Rect, app: &mut App) {
 
     
     
-    let [summary, text] = Layout::vertical([
+    let [summary, text, plots] = Layout::vertical([
         Constraint::Length(10),
         Constraint::Min(0),
+        Constraint::Ratio(1, 3),
     ]).areas(right);
 
     let v = &editor.validation;
@@ -210,6 +214,38 @@ fn draw_edit(frame: &mut Frame, area: Rect, app: &mut App) {
     frame.render_widget(Paragraph::new(lines).wrap(Wrap {trim: false}).block(summary_block), summary);
     
     frame.render_widget(Paragraph::new(editor.doc.text()).block(Block::bordered().title(" toml")), text);
+
+    match &v.preview {
+        Some(Ok(p)) => draw_preview(frame, plots, p, &app.projection, None),
+        Some(Err(e)) => placeholder(frame, plots, &format!("no preview: {e}")),
+        None => placeholder(frame, text, "no preview until the config parses"),
+    }
+}
+
+
+fn draw_preview(frame: &mut Frame, area: Rect, p: &Preview, projection: &plotting::orbits::Projection,
+    current: Option<usize>) {
+    let [p_ram, phi, orbit] = Layout::horizontal([
+        Constraint::Percentage(33), Constraint::Percentage(33), Constraint::Percentage(33)]
+    ).areas(area);
+
+    let t_end = p.t_myr.last().copied().unwrap_or(1.0);
+
+    let cursor = current.and_then(|i| p.t_myr.get(i).copied());
+
+    let series = |y: &[f64]| -> Vec<(f64, f64)> {
+        p.t_myr.iter().copied().zip(y.iter().copied()).collect() 
+    };
+
+    let p_title = if p.ram_pressure_on { "P_ram [dyn/cm^2]" } else {"P_ram, off"};
+    
+    plotting::timeseries::time_xy_chart(frame, p_ram, p_title, &series(&p.p_ram_dyn_cm2), 
+        t_end, YAxis::Auto, cursor);
+    plotting::timeseries::time_xy_chart(frame, phi, "Phi_dw [deg]", &series(&p.phi_dw_deg), 
+        t_end, YAxis::Auto, cursor);
+
+    plotting::orbits::orbit_canvas(frame, orbit, &p.pos, p.r_vir_kpc, *projection, 
+        current);
 }
 
 
