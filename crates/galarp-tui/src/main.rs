@@ -8,8 +8,11 @@ use ratatui::DefaultTerminal;
 mod app;
 mod configedit;
 mod input;
+mod plotting;
+mod preview;
 mod tabs;
 mod ui;
+
 
 fn main() -> std::io::Result<()> {
     let mut app = app::App::new(std::env::current_dir()?);
