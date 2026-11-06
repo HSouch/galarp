@@ -77,8 +77,33 @@ impl ConfigDoc {
             rows.extend(fields.iter().map(|(p, help)| Row::Field { path: parse_path(p), help }));
         }
 
-        // This could use more work
-        
+        rows.push(Row::Header("cluster gas".into()));
+
+        let gas = get(&self.doc, &parse_path("cluster.gas")).and_then(Item::as_table_like);
+        let keys: Vec<String> = gas
+            .map(|t| t.iter().filter(|(_, v)| v.is_value()).map(|(k, _)| k.to_string()).collect())
+            .unwrap_or_default();
+        if keys.is_empty() {
+            rows.push(
+                Row::Field { path: parse_path("cluster.gas.model"), 
+                help: "\"uniform\", \"beta\", \"table\" or \"none\"" });
+        }
+        for k in keys {
+            let path = vec![Segment::Key("cluster".into()), Segment::Key("gas".into()), Segment::Key(k)];
+            rows.push(Row::Field { path, help: "[cluster.gas]; see the manual for the model's keys" });
+        }
+
+        // One block of GALAXY rows per [[galaxy]].
+        let n_gal = self.doc.get("galaxy").and_then(
+            Item::as_array_of_tables).map_or(0, |a| a.len());
+        for g in 0..n_gal {
+            rows.push(Row::Header(if g == 0 { "galaxy 0 (parent)".into() } else { format!("galaxy {g}") }));
+            
+            for (p, help) in GALAXY {
+                rows.push(Row::Field { path: parse_path(&format!("galaxy.{g}.{p}")), help });
+            }
+        }
+       
         self.rows = rows;
 
     }
