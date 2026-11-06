@@ -7,3 +7,6 @@ runs/
 galarp-tui-old/
 
 personal/
+
+configs/
+!configs/face_on.toml
