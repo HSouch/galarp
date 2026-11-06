@@ -1,5 +1,5 @@
 
-use ratatui::widgets::{List, ListState};
+use ratatui::widgets::ListState;
 
 use crate::configedit::{ConfigDoc, Row, Segment, Validation};
 

@@ -154,7 +154,6 @@ impl App {
                 KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {},
                 _ => self.mode = Mode::Confirm { question, action },
             }
-            _ => {},
         }
     }
 
