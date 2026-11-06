@@ -42,12 +42,20 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
 
     match &app.mode {
         Mode::Normal => {},
-        
+        Mode::Help => draw_help_popup(frame),
+
         Mode::EditField { path, input } => {
             draw_input(frame, &path_string(path), &input.text, input.cursor)
-        }
+        },
         
-        Mode::Help => draw_help_popup(frame),
+        Mode::SaveAs { input } => {
+            let title = format!("save as (relative to {})", app.cwd.display());
+            draw_input(frame, &title, &input.text, input.cursor);
+        },
+
+        Mode::Confirm { question, .. } => {
+            draw_confirm(frame, question);
+        },
 
     }
 
@@ -229,6 +237,15 @@ fn draw_input(frame: &mut Frame, title: &str, text: &str, cursor: usize) {
 
     frame.render_widget(Paragraph::new(text.to_string()).scroll((0, scroll)).block(block), area);
     frame.set_cursor_position((inner.x + cursor as u16 - scroll, inner.y));
+}
+
+
+fn draw_confirm(frame: &mut Frame, question: &str) {
+    let area = popup(frame, (question.len() as u16 + 4).max(25), 4);
+    let text = vec![Line::raw(question.to_string()), Line::from("y yes   n no".dim())];
+
+    let block = Block::bordered().border_style(Style::new().fg(Color::LightBlue));
+    frame.render_widget(Paragraph::new(text).block(block), area);
 }
 
 

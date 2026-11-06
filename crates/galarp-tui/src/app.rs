@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::ListState;
 
-use crate::configedit::{ConfigDoc, Segment};
+use crate::configedit::{parse_path, ConfigDoc, Segment};
 use crate::input::LineInput;
 use crate::tabs::configs::{self, Check};
 use crate::tabs::editor::Editor;
@@ -50,6 +50,14 @@ pub enum Mode {
     Normal,
     Help,
     EditField {path: Vec<Segment>, input: LineInput},
+    SaveAs { input: LineInput },
+    Confirm { question: String, action: Action },
+}
+
+pub enum Action {
+    Open(PathBuf),
+    Quit,
+    Save(PathBuf),
 }
 
 
@@ -106,6 +114,15 @@ impl App {
         p.strip_prefix(&self.cwd).unwrap_or(p).to_string_lossy()
     }
 
+    fn dirty(&self) -> bool {
+        self.editor.as_ref().is_some_and(|e| e.doc.not_pristine())
+    }
+
+    fn info(&mut self, msg: impl Into<String>) {
+        self.message = Some((msg.into(), false));
+    }
+
+
     fn error(&mut self, msg: impl Into<String>) {
         self.message = Some((msg.into(), true));
     }
@@ -124,12 +141,28 @@ impl App {
                     self.mode = Mode::EditField { path, input };
                 }
             },
+            Mode::SaveAs { mut input } => match key.code {
+                KeyCode::Esc => {},
+                KeyCode::Enter => self.request_save(&input.text),
+                _ => {
+                    input.on_key(key);
+                    self.mode = Mode::SaveAs { input };
+                },
+            }
+            Mode::Confirm { question, action } => match key.code {
+                KeyCode::Char('y') | KeyCode::Char('Y') => self.act(action),
+                KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {},
+                _ => self.mode = Mode::Confirm { question, action },
+            }
+            _ => {},
         }
     }
 
     fn on_normal_key(&mut self, key: KeyEvent) {
         match key.code {
             // q sets mode to quit (will might want to ask for saving later)
+            KeyCode::Char('q') if self.dirty() => self.confirm("Quit without saving edits?", Action::Quit),
+            
             KeyCode::Char('q') => self.quit = true,
             // ? opens a help popup
             KeyCode::Char('?') => self.mode = Mode::Help,
@@ -143,6 +176,18 @@ impl App {
             },
         }
     }    
+
+    fn confirm(&mut self, question: &str, action: Action) {
+        self.mode = Mode::Confirm { question: question.into(), action };
+    }
+
+    fn act(&mut self, action: Action) {
+        match action {
+            Action::Quit => self.quit = true,
+            Action::Open(path) => self.open(&path),
+            Action::Save(path) => self.save(&path),
+        }
+    }
 
     fn on_edit_key(&mut self, key: KeyEvent) {
         let Some(ed) = self.editor.as_mut() else { return };
@@ -170,6 +215,15 @@ impl App {
                 self.commit_field(&path, "");
             },
             
+            KeyCode::Char('w') => {
+                let p = &ed.doc.path;
+                let default = p.strip_prefix(&self.cwd)
+                    .unwrap_or(p)
+                    .to_string_lossy()
+                    .into_owned();
+
+                self.mode = Mode::SaveAs { input: LineInput::new( default) };
+            }
             _ => {},
         }
     }
@@ -190,13 +244,17 @@ impl App {
             KeyCode::Up | KeyCode::Char('k') => self.list.select_previous(),
             KeyCode::Home | KeyCode::Char('g') => self.list.select_first(),
             KeyCode::End | KeyCode::Char('G') => self.list.select_last(),
-            KeyCode::Char('r') => self.rescan(),
+            KeyCode::Char('r') => self.rescan(None),
             
             KeyCode::Enter | KeyCode::Char('l') | KeyCode::Right => {
                 let Some(path) = self.selected().cloned() else { return };
-                self.open(&path);
+                
+                if self.dirty() { 
+                    self.confirm("Open this config and drop saved edits?", Action::Open(path));
+                } else { 
+                    self.open(&path);
+                }
             }
-
             _ => {},
         }
     }
@@ -213,9 +271,62 @@ impl App {
     }
     
 
-    fn rescan(&mut self) {
+    fn rescan(&mut self, select: Option<&Path>) {
         self.files = configs::find(&self.cwd);
         self.checks.clear();
-        self.list.select((!self.files.is_empty()).then_some(0));
+        
+        let i = select.and_then(|p| self.files.iter().position(|f| f == p))
+            .or((!self.files.is_empty()).then_some(0));
+        
+        self.list.select(i);
     }
+
+
+    fn request_save(&mut self, typed: &str) {
+        let Some(ed) = self.editor.as_ref() else { return };
+        let typed = typed.trim();
+
+        if typed.is_empty() {
+            return;
+        }
+        let path = self.cwd.join(typed);
+
+        if path.exists() && path != ed.doc.path {
+            self.confirm(&format!("{typed} exists. Replace it?"), Action::Save(path));
+        } else {
+            self.save(&path);
+        }
+    }
+
+
+    fn save(&mut self, path: &Path) {
+        let Some(editor) = self.editor.as_mut() else { return };
+
+        let stem = |p: &Path| p.file_stem().map(
+            |s| s.to_string_lossy().into_owned()
+        );
+        let (old, new) = (stem(&editor.doc.path), stem(path));
+        let out_key = parse_path("run.output_dir");
+        let mut note = String::new();
+
+        if let (Some(old), Some(new), Some(dir)) = (old, new, editor.doc.str_value(&out_key)) {
+            let dir = PathBuf::from(dir);
+            if old != new && dir.file_name().is_some_and(|n| n.to_string_lossy() == old) {
+                let moved = dir.with_file_name(&new);
+                let _ = editor.doc.set(&out_key, &format!("{:?}", moved.to_string_lossy()));
+                note = format!("; run.output_dir is now {}", moved.display());
+            }
+        }
+        match editor.doc.save_as(path) {
+            Ok(()) => {
+                editor.revalidate();
+                let shown = self.display_path(path).into_owned();
+                self.info(format!("saved {shown}{note}"));
+                self.rescan(Some(path));
+            }
+            Err(e) => self.error(e),
+        }
+    }
+
+    
 }
