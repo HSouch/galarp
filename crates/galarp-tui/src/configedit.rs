@@ -1,7 +1,7 @@
 
 use std::path::{Path, PathBuf};
 
-use galarp_io::config::{Config, CORE, GALAXY};
+use galarp_io::config::Config;
 use galarp_io::snapshot::output_path;
 use galarp_run::Run;
 
@@ -97,7 +97,10 @@ impl ConfigDoc {
         let n_gal = self.doc.get("galaxy").and_then(
             Item::as_array_of_tables).map_or(0, |a| a.len());
         for g in 0..n_gal {
-            rows.push(Row::Header(if g == 0 { "galaxy 0 (parent)".into() } else { format!("galaxy {g}") }));
+            rows.push(
+                Row::Header(if g == 0 { "galaxy 0 (parent)".into() } 
+                else 
+                { format!("galaxy {g}").to_string() }));
             
             for (p, help) in GALAXY {
                 rows.push(Row::Field { path: parse_path(&format!("galaxy.{g}.{p}")), help });
@@ -304,3 +307,51 @@ pub struct Validation {
 }
 
 
+pub const CORE: &[(&str, &[(&str, &str)])] = &[
+    (
+        "run",
+        &[
+            ("run.output_dir", "directory for snapshots and log.csv (relative to where galarp-tui runs)"),
+            ("run.t_end_myr", "end time"),
+            ("run.dt_max_myr", "log interval; a whole multiple of galarp.dt_myr"),
+            ("run.snapshot_interval_myr", "snapshot interval; a whole multiple of run.dt_max_myr"),
+            ("box.side_kpc", "side of the box written to snapshot headers, centered on the parent"),
+            ("galarp.dt_myr", "RK4 step"),
+            ("galarp.vertical_dispersion_km_s", "cloud sigma_z (default: the disk's sound speed)"),
+            ("galarp.seed", "seed of the vertical velocities"),
+
+        ],
+    ),
+    (
+        "ram pressure",
+        &[
+            ("ram_pressure.enabled", "push the clouds with S rho |v_rel| v_rel / Sigma"),
+            ("ram_pressure.surface_density_msun_pc2", "cloud surface density Sigma"),
+            ("ram_pressure.density_at", "\"galaxy\" (rho at its center, as GalaRP) or \"particle\""),
+            ("ram_pressure.shadow.enabled", "GalaRP's dynamic shadow"),
+            ("ram_pressure.shadow.drag_coefficient", "C_D in tau = C_D A / bin_width^2"),
+            ("ram_pressure.shadow.bin_width_kpc", "side of the columns along the wind"),
+        ],
+    ),
+    (
+        "diagnostics",
+        &[
+            ("diagnostics.disk_region_radius_kpc", "disk region radius for in_disk_fraction"),
+            ("diagnostics.disk_region_half_height_kpc", "disk region half height for in_disk_fraction"),
+        ],
+    ),
+];
+
+pub const GALAXY: &[(&str, &str)] = &[
+    ("name", "label in the log and summaries"),
+    ("inclination_deg", "disk tilt from the cluster z axis (or give disk_normal)"),
+    ("azimuth_deg", "azimuth of the tilt"),
+    ("disk.n_particles", "number of clouds"),
+    ("disk.mass_msun", "disk gas mass"),
+    ("disk.scale_length_kpc", "exponential scale length"),
+    ("disk.r_max_kpc", "disk truncation radius"),
+    ("disk.sound_speed_km_s", "sets the default sigma_z"),
+    ("orbit.mode", "\"constant_velocity\", \"integrate\" or \"table\""),
+    ("orbit.position_kpc", "start position in the cluster frame"),
+    ("orbit.velocity_km_s", "start velocity in the cluster frame; the wind is minus this"),
+];
