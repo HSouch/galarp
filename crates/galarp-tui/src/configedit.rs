@@ -7,6 +7,7 @@ use galarp_run::Run;
 
 use toml_edit::{DocumentMut, Item, Table, TableLike, Value};
 
+use crate::preview::Preview;
 
 /// Either a table key, or an entry of an array of tables
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -184,6 +185,8 @@ impl ConfigDoc {
         Ok(())
     }
 
+    /// Parses and validates edited text.
+    /// Also sets up the dry run.
     pub fn validate(&self) -> Validation {
         let base = self.path.parent().unwrap_or(Path::new("."));
         let text = self.text();
@@ -195,6 +198,8 @@ impl ConfigDoc {
             |c| c.run.output_dir.clone()
         );
 
+        let preview = cfg.as_ref().ok().map(Preview::new);
+
         let result = cfg
             .map_err(|e| e.0)
             .and_then(|cfg| Run::new(cfg, text).map(|r| r.summary)
@@ -205,7 +210,7 @@ impl ConfigDoc {
         let output_has_snapshots = !output_dir.as_os_str().is_empty() && 
             output_path(&output_dir, 0).exists();
 
-        Validation { result, output_dir, output_has_snapshots }
+        Validation { result, output_dir, output_has_snapshots, preview }
         
     }
 
@@ -304,6 +309,8 @@ pub struct Validation {
 
     pub output_dir: PathBuf,
     pub output_has_snapshots: bool,
+
+    pub preview: Option<Result<Preview, String>>,
 }
 
 
