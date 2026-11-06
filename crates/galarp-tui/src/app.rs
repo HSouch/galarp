@@ -8,6 +8,7 @@ use crate::configedit::{parse_path, ConfigDoc, Segment};
 use crate::input::LineInput;
 use crate::tabs::configs::{self, Check};
 use crate::tabs::editor::Editor;
+use crate::plotting::orbits::Projection;
 
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -74,6 +75,7 @@ pub struct App {
 
     checks: HashMap<PathBuf, Check>,
     pub editor: Option<Editor>,
+    pub projection: Projection,
 }
 
 
@@ -92,6 +94,7 @@ impl App {
             list,
             checks: HashMap::new(),
             editor: None,
+            projection: Projection::XY,
         }
     }
 
@@ -207,7 +210,9 @@ impl App {
                     },
                     Err(e) => self.error(e),
                 }
-            }
+            },
+
+            KeyCode::Char('o') => self.projection = self.projection.next(),
 
             KeyCode::Delete | KeyCode::Char('d') => {
                 let Some(path) = ed.selected_path().map(<[Segment]>::to_vec) else { return };
