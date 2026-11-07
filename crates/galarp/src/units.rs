@@ -1,9 +1,9 @@
 
 // CODE UNITS
 
-pub const UNIT_LENGTH_CM: f64 = 3.085_677_581e21;   // Code length unit: 1kpc
-pub const UNIT_MASS_G: f64 = 1.988_92e43;           // Code mass unit: 10^10 Msun
-pub const UNIT_VELOCITY_CM_S: f64 = 1.0e5;          // Code velocity unit 1 km/s
+pub const UNIT_LENGTH_CM: f64 = 3.085_677_581e21;           // Code length unit: 1kpc
+pub const UNIT_MASS_G: f64 = 1.988_409_870_698_051e43;      // Code mass unit: 10^10 Msun (IAU 2015, same as Gala)
+pub const UNIT_VELOCITY_CM_S: f64 = 1.0e5;                  // Code velocity unit 1 km/s
 pub const UNIT_TIME_S: f64 = UNIT_LENGTH_CM / UNIT_VELOCITY_CM_S;
 
 pub const UNIT_SURFACE_DENSITY_CGS: f64 = UNIT_MASS_G / (UNIT_LENGTH_CM * UNIT_LENGTH_CM);
