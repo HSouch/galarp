@@ -11,3 +11,5 @@ personal/
 configs/
 !configs/face_on.toml
 !configs/cluster_infall.toml
+
+prototyping/
