@@ -94,10 +94,11 @@ impl Run {
 
         summary.push(match &rp {
             Some(_) => format!(
-                "ram pressure: Sigma {} Msun/pc^2, rho at the {}, shadow {}",
+                "ram pressure: Sigma {} Msun/pc^2, C_D {}, rho at the {}, shadow {}",
                 rpc.surface_density_msun_pc2,
+                rpc.drag_coefficient,
                 rpc.density_at,
-                if rpc.shadow.enabled { format!("C_D {} in {} kpc columns", rpc.shadow.drag_coefficient, rpc.shadow.bin_width_kpc) } else { "off".into() }
+                if rpc.shadow.enabled { format!(" {} kpc columns", rpc.shadow.bin_width_kpc) } else { "off".into() }
             ),
             None => "ram pressure: off (gravity only)".into(),
         });
@@ -186,7 +187,6 @@ impl Run {
         Ok(true)
     }
 }
-
 
 
 pub struct Progress<'a> {

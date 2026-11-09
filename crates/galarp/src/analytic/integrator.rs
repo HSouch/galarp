@@ -103,6 +103,7 @@ mod tests {
             icm: ClusterGas::Uniform { rho, u: 1.0 }, 
             surface_density: sigma.into(), 
             density_at: DensityAt::Galaxy, 
+            drag_coeff: 1.0,
             shadow: None };
 
         let forces = CloudForces { field: &field, ram_pressure: Some(&rp) };

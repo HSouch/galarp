@@ -21,10 +21,10 @@ temperature_k = 5e7
 [ram_pressure]
 enabled = true
 surface_density_msun_pc2 = 10
+drag_coefficient = 0.5
 
 [ram_pressure.shadow]
 enabled = false
-drag_coefficient = 0.5
 bin_width_kpc = 2
 
 [galarp]

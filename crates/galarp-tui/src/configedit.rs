@@ -336,7 +336,7 @@ pub const CORE: &[(&str, &[(&str, &str)])] = &[
             ("ram_pressure.surface_density_msun_pc2", "cloud surface density Sigma"),
             ("ram_pressure.density_at", "\"galaxy\" (rho at its center, as GalaRP) or \"particle\""),
             ("ram_pressure.shadow.enabled", "GalaRP's dynamic shadow"),
-            ("ram_pressure.shadow.drag_coefficient", "C_D in tau = C_D A / bin_width^2"),
+            ("ram_pressure.drag_coefficient", "drag coefficient on clouds"),
             ("ram_pressure.shadow.bin_width_kpc", "side of the columns along the wind"),
         ],
     ),

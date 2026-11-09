@@ -20,6 +20,8 @@ pub struct RamPressureConfig {
     /// Where rho is evaluated: "galaxy" (its center, as GalaRP) or "particle".
     pub density_at: String,
     pub shadow: ShadowConfig,
+    /// Drag coefficient (efficiency of wind pushing on each cloud).
+    pub drag_coefficient: f64,
 }
 
 /// `[ram_pressure.shadow]`: `DynamicShadow`. Off unless `enabled = true`.
@@ -27,8 +29,6 @@ pub struct RamPressureConfig {
 #[serde(deny_unknown_fields, default)]
 pub struct ShadowConfig {
     pub enabled: bool,
-    /// C_D in the optical depth tau = C_D A / bin_width^2 of each particle.
-    pub drag_coefficient: f64,
     /// Side of the square columns along the wind.
     pub bin_width_kpc: f64,
 }
@@ -44,13 +44,14 @@ impl Default for RamPressureConfig {
             surface_density_msun_pc2: ParamSpec::Value(10.0),
             density_at: "galaxy".into(),
             shadow: ShadowConfig::default(),
+            drag_coefficient: 0.5,
         }
     }
 }
 
 impl Default for ShadowConfig {
     fn default() -> Self {
-        Self { enabled: false, drag_coefficient: 0.5, bin_width_kpc: 2.0 }
+        Self { enabled: false,  bin_width_kpc: 2.0 }
     }
 }
 
@@ -76,9 +77,11 @@ impl RamPressureConfig {
             return err(format!("ram_pressure.density_at must be \"galaxy\" or \"particle\", got \"{}\"", self.density_at));
         }
         if self.shadow.enabled {
-            positive("ram_pressure.shadow.drag_coefficient", self.shadow.drag_coefficient)?;
             positive("ram_pressure.shadow.bin_width_kpc", self.shadow.bin_width_kpc)?;
         }
+        
+        positive("ram_pressure.drag_coefficient", self.drag_coefficient)?;
+        
         Ok(())
     }
 }
@@ -96,11 +99,12 @@ impl Config {
         }
         // Msun / pc^2 to 1e10 Msun / kpc^2.
         let sigma = rp.surface_density_msun_pc2.to_param(1e6 * MSUN);
+        let drag_coeff = rp.drag_coefficient;
         let shadow = rp.shadow.enabled.then_some(DynamicShadow {
-            drag_coeff: rp.shadow.drag_coefficient,
             bin_width: rp.shadow.bin_width_kpc,
         });
+
         let density_at = if rp.density_at == "particle" { DensityAt::Particle } else { DensityAt::Galaxy };
-        Ok(Some(RamPressure { icm: self.cluster_gas()?, surface_density: sigma, density_at, shadow }))
+        Ok(Some(RamPressure { icm: self.cluster_gas()?, surface_density: sigma, density_at, drag_coeff, shadow }))
     }
 }

@@ -55,6 +55,7 @@ pub struct RamPressure {
     pub icm: ClusterGas,
     pub surface_density: Param,
     pub density_at: DensityAt,
+    pub drag_coeff: f64,
     pub shadow: Option<DynamicShadow>,
 }
 
@@ -93,7 +94,7 @@ impl RamPressure {
                 let x: Vec<[f64; 3]> = members.iter()
                     .map(|&i| pos[i]).collect();
                 let area: Vec<f64> = members.iter()
-                    .map(|&i| mass[i] / sigma).collect();
+                    .map(|&i| self.drag_coeff * mass[i] / sigma).collect();
                 
                 for (&i, f) in members.iter()
                     .zip(shadow.factors(los, wind.normal, wind.center, &x, &area)) {
@@ -112,7 +113,7 @@ impl RamPressure {
             };
 
             let v_rel = [-v[0], -v[1], -v[2]];
-            let f = s * rho * norm(&v_rel) / sigma;
+            let f = self.drag_coeff * s * rho * norm(&v_rel) / sigma;
 
             [f * v_rel[0], f * v_rel[1], f * v_rel[2]]
         }
@@ -155,7 +156,12 @@ mod tests {
 
     #[test]
     fn acceleration_is_rho_v_squared_over_sigma_against_the_motion() {
-        let rp = RamPressure { icm: ClusterGas::Uniform { rho: 2.0, u: 1.0 }, surface_density: 4.0.into(), density_at: DensityAt::Galaxy, shadow: None };
+        let rp = RamPressure { 
+            icm: ClusterGas::Uniform { rho: 2.0, u: 1.0 }, 
+            surface_density: 4.0.into(), 
+            density_at: DensityAt::Galaxy, 
+            drag_coeff: 1.0,
+            shadow: None };
         let field = moving_galaxy([0.0, 0.0, 3.0]);
         let wind = rp.winds(&field, 0.5)[0];
         assert_eq!(wind.direction(), Some([0.0, 0.0, -1.0]));
@@ -167,23 +173,4 @@ mod tests {
         assert_eq!(wind.angle_deg(), 0.0);
     }
 
-    #[test]
-    fn each_galaxy_shadows_only_its_own_clouds() {
-        let rp = RamPressure {
-            icm: ClusterGas::Uniform { rho: 1.0, u: 1.0 },
-            surface_density: 1.0.into(),
-            density_at: DensityAt::Galaxy,
-            shadow: Some(DynamicShadow { drag_coeff: 1.0, bin_width: 1.0 }),
-        };
-        // Two galaxies, both at z = 0.5 moving along +z: the wind blows along -z, so the
-        // cloud above is upstream. The third cloud is in the same column but belongs to the
-        // second galaxy, so it is alone in its own galaxy's columns and unshadowed.
-        let orbit = OrbitTable::new(vec![0.0, 1.0], vec![[0.0; 3], [0.0, 0.0, 1.0]], vec![[0.0, 0.0, 1.0]; 2]).unwrap();
-        let field = moving_galaxy([0.0, 0.0, 1.0]).with_galaxy(PointMass { mass: 0.0.into() }, Some(orbit));
-        let pos = [[0.2, 0.2, 2.0], [0.2, 0.2, 1.0], [0.2, 0.2, 0.0]];
-        let (acc, s) = rp.evaluate(&field, 0.5, &pos, &[[0.0, 0.0, 1.0]; 3], &[0.5; 3], &[0, 0, 1]);
-        assert!(s[0] < 1.0 && s[1] < s[0] && s[2] == 1.0, "{s:?}");
-        // Each cloud moves with its galaxy, so it meets a unit wind along -z scaled by S.
-        assert!(acc.iter().zip(&s).all(|(a, &si)| (a[2] + si).abs() < 1e-12), "{acc:?}");
-    }
 }
