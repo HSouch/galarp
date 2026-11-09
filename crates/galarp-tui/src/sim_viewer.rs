@@ -23,5 +23,10 @@ impl Viewer {
     }
 
 
-    
+    pub fn shown_step(&self) -> Option<usize> {
+        let n = self.data.steps.len();
+        (n > 0).then(|| self.cursor.unwrap_or(n - 1).min(n-1))
+    }
+
+
 }
