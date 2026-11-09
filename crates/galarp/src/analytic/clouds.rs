@@ -41,9 +41,36 @@ impl Clouds {
         self.a_ram.push([0.0; 3])
     }
 
-    pub fn add_disk(
+    pub fn add_disk(&mut self, 
+        disk: &GasDisk, 
+        potential: &dyn Potential,
+        orientation: Orientation,
+        galaxy: u16,
+        n: usize,
+        center: [f64; 3],
+        bulk_velocity: [f64; 3],
+        sigma_z: f64,
+        seed: u64,
+        next_id: &mut u64) {
+            
+            self.add_points(&disk.sample(n), 
+                disk.params.mass, 
+                potential, 
+                orientation, 
+                galaxy, 
+                n, 
+                center, 
+                bulk_velocity, 
+                sigma_z, seed, 
+                next_id);
+
+        }
+
+
+    pub fn add_points(
         &mut self,
-        disk: &GasDisk,
+        points: &[[f64; 3]],
+        mass: f64,
         potential: &dyn Potential,
         orientation: Orientation,
         galaxy: u16,
@@ -56,11 +83,11 @@ impl Clouds {
     ) {
         
         // Individual cloud masses defined by disk total mass and number of clouds.
-        let m = disk.params.mass / n as f64;
+        let m = mass / n as f64;
         let mut rng = Rng::new(seed);
 
         // Sample the disk n times.
-        for x in disk.sample(n) {
+        for &x in points {
             let r = x[0].hypot(x[1]);
 
             let v_phi = 
