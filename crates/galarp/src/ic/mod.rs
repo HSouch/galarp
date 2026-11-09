@@ -1,10 +1,12 @@
 
 
 pub mod disk;
+pub mod grid;
 
 pub use disk::{DiskOptions, GasDisk, GasDiskParams};
+pub use grid::{GridLayout, TestGrid};
 
-
+/// Halton sampling function
 pub fn halton(mut index: u64, base: u64) -> f64 {
     let mut f = 1.0;
     let mut r = 0.0;
