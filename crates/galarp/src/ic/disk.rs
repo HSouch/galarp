@@ -1,7 +1,7 @@
 
 
 
-//! Isotherman gas disk in HSE in a static potential
+//! Isothermal gas disk in HSE in a static potential
 //! 
 //! Optically can include the gas disk's own gravity.
 //! 
