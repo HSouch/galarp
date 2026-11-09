@@ -140,6 +140,9 @@ impl Config {
                 resolve(file);
             }
         }
+        
+        resolve(&mut cfg.run.output_dir);
+
         cfg.validate()?;
         Ok(cfg)
     }
