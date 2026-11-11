@@ -5,15 +5,15 @@ use std::time::Duration;
 use ratatui::crossterm::event::{ self, Event, KeyEventKind };
 use ratatui::DefaultTerminal;
 
-mod app;
-mod configedit;
-mod input;
-mod plotting;
-mod preview;
-mod sim_runner;
-mod sim_viewer;
-mod tabs;
-mod ui;
+mod app;            // App functionality and general keystroke handling
+mod configedit;     // Editing and writing config files.
+mod input;          // Line input handling
+mod plotting;       // Plotting routines
+mod preview;        // Getting GalaRP previews of infall (very low cost)
+mod sim_runner;     // Running simulations on separate thread
+mod sim_viewer;     // Viewing simulations
+mod tabs;           // Individual galarp-tui tab crates
+mod ui;             // UI drawing 
 
 
 fn main() -> std::io::Result<()> {
@@ -30,6 +30,8 @@ fn main() -> std::io::Result<()> {
 
 fn run(terminal: &mut DefaultTerminal, app: &mut app::App) -> std::io::Result<()> {
     while !app.quit {
+        app.tick();
+
         terminal.draw(|frame| ui::draw(frame, app))?;
 
         if event::poll(Duration::from_millis(50))? {
