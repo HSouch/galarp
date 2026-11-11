@@ -1,5 +1,4 @@
 
-use galarp_io::preview;
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 
 use crate::preview::Preview;

@@ -1,5 +1,5 @@
 
-use ratatui::{crossterm::style::Stylize, widgets::canvas::{Canvas, Circle, Line as CanvasLine}};
+use ratatui::{widgets::canvas::{Canvas, Circle, Line as CanvasLine}};
 use galarp::utils::{dot};
 
 use super::*;

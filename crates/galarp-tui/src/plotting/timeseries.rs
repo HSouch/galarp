@@ -19,8 +19,7 @@ pub struct Series<'a> {
 
 pub fn time_xy_chart(frame: &mut Frame, area: Rect, title: &str, data: &[(f64, f64)], t_end: f64,
     y: YAxis, cursor: Option<f64>) {
-        /// Line chart of (t, y)
-        
+        // Line chart of (t, y)
         let series = [Series {name: "", color: Color::Cyan, data: data.to_vec()}];
         chart(frame, area, title, &series, t_end, y, cursor);
     }
@@ -60,13 +59,6 @@ pub fn chart(frame: &mut Frame, area: Rect, title: &str, series: &[Series], t_en
         let pad = if hi == 0.0 { 1.0 } else { 0.1 * hi.abs() };
         (lo, hi) = (lo - pad, hi + pad);
     }
-
-    
-    // let label = |v: f64| if log { fmt(10f64.powf(v)) } else { fmt(v) };
-
-    let line = |color: Color| 
-        Dataset::default().marker(Marker::Braille).graph_type(GraphType::Line)
-            .style(Style::new().fg(color));
 
     let cursor_line: Vec<(f64, f64)> = cursor.map(|t| vec![(t, lo), (t, hi)]).unwrap_or_default();
 
