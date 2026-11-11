@@ -1,11 +1,4 @@
 
-// use ratatui::layout::Rect;
-// use ratatui::style::{Color, Style};
-// use ratatui::symbols::Marker;
-// use ratatui::text::Span;
-// use ratatui::widgets::{Axis, Block, Chart, Dataset, GraphType};
-// use ratatui::Frame;
-
 use super::*;
 
 #[derive(Clone, Copy)]
@@ -16,25 +9,45 @@ pub enum YAxis {
     Auto,
 }
 
+/// One line series for charting
+pub struct Series<'a> {
+    pub name: &'a str,
+    pub color: Color,
+    pub data: Vec<(f64, f64)>,
+}
+
+
 pub fn time_xy_chart(frame: &mut Frame, area: Rect, title: &str, data: &[(f64, f64)], t_end: f64,
     y: YAxis, cursor: Option<f64>) {
-    
-    let finite: Vec<(f64, f64)> = data.iter().copied()
-        .filter(|p| p.1.is_finite()).collect();
+        /// Line chart of (t, y)
+        
+        let series = [Series {name: "", color: Color::Cyan, data: data.to_vec()}];
+        chart(frame, area, title, &series, t_end, y, cursor);
+    }
 
+
+pub fn chart(frame: &mut Frame, area: Rect, title: &str, series: &[Series], t_end: f64, y: YAxis, cursor: Option<f64>) {
+    
+    let finite: Vec<Vec<(f64, f64)>> = 
+        series.iter().map(|s| s.data.iter().copied().filter(
+            |p| p.1.is_finite()).collect()).collect();
+    
+    
     let (mut lo, mut hi) = match y {
         YAxis::Fixed(lo, hi) => (lo, hi),
-        YAxis::Auto => finite.iter()
+        YAxis::Auto => finite.iter().flatten()
             .fold(
                 (f64::INFINITY, f64::NEG_INFINITY),
                 |(a, b), p| (a.min(p.1), b.max(p.1))
             ),
     };
 
-    /// If auto, log the y-axis if it spans two orders of magnitude
+    // If auto, log the y-axis if it spans two orders of magnitude
     let log = matches!(y, YAxis::Auto) && lo > 0.0 && hi / lo > 100.0;
-    let points: Vec<(f64, f64)> = if log { finite.iter().map(|&(t, v)| (t, v.log10())).collect() } else {finite };
-
+    let points: Vec<Vec<(f64, f64)>> = if log { finite.iter().map(
+        |d| d.iter().map(
+            |&(t, v)| (t, v.log10())).collect()).collect()
+        } else {finite };
 
     if log {
         (lo, hi) = (lo.log10(), hi.log10());
@@ -55,9 +68,25 @@ pub fn time_xy_chart(frame: &mut Frame, area: Rect, title: &str, data: &[(f64, f
         Dataset::default().marker(Marker::Braille).graph_type(GraphType::Line)
             .style(Style::new().fg(color));
 
-    let mut datasets = vec![
-        line(Color::Cyan).data(&points)
-    ];
+    let cursor_line: Vec<(f64, f64)> = cursor.map(|t| vec![(t, lo), (t, hi)]).unwrap_or_default();
+
+    let line = |color: Color|
+        Dataset::default()
+        .marker(Marker::Braille)
+        .graph_type(GraphType::Line)
+        .style(Style::new().fg(color));
+
+    let mut datasets: Vec<Dataset> = series
+        .iter()
+        .zip(&points)
+        .map(|(s, d)| {
+            let ds = line(s.color).data(d);
+            if series.len() > 1 { ds.name(s.name) } else { ds }
+        }).collect();
+    
+    if cursor.is_some() {
+        datasets.push(line(Color::Yellow).data(&cursor_line));
+    }
 
     let chart = Chart::new(datasets)
         .block(Block::bordered().title(title))
