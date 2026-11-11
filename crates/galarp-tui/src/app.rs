@@ -6,9 +6,11 @@ use ratatui::widgets::ListState;
 
 use crate::configedit::{parse_path, ConfigDoc, Segment};
 use crate::input::LineInput;
+use crate::plotting::orbits::Projection;
+use crate::sim_runner::RunData;
+use crate::sim_viewer::Viewer;
 use crate::tabs::configs::{self, Check};
 use crate::tabs::editor::Editor;
-use crate::plotting::orbits::Projection;
 
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -59,6 +61,7 @@ pub enum Action {
     Open(PathBuf),
     Quit,
     Save(PathBuf),
+    Run,
 }
 
 
@@ -66,7 +69,7 @@ pub struct App {
     pub quit: bool,
     pub tab: Tab,
     pub mode: Mode,
-
+    /// Message for the status bar. Any key input will clear the message.
     pub message: Option<(String, bool)>,
 
     pub cwd: PathBuf,
@@ -75,7 +78,12 @@ pub struct App {
 
     checks: HashMap<PathBuf, Check>,
     pub editor: Option<Editor>,
+    /// Which plane any orbit is being drawn from.
     pub projection: Projection,
+
+    /// The run being watched (or last watched)
+    pub run: Option<Viewer>,
+
 }
 
 
@@ -95,6 +103,7 @@ impl App {
             checks: HashMap::new(),
             editor: None,
             projection: Projection::XY,
+            run: None,
         }
     }
 
@@ -121,13 +130,20 @@ impl App {
         self.editor.as_ref().is_some_and(|e| e.doc.not_pristine())
     }
 
+    /// Set info message for status bar.
     fn info(&mut self, msg: impl Into<String>) {
         self.message = Some((msg.into(), false));
     }
 
-
+    /// Set error message for status bar.
     fn error(&mut self, msg: impl Into<String>) {
         self.message = Some((msg.into(), true));
+    }
+
+    pub fn tick(&mut self) {
+        if let Some(run) = &mut self.run {
+            run.data.poll();
+        }
     }
 
     pub fn on_key(&mut self, key: KeyEvent) {
@@ -171,9 +187,11 @@ impl App {
             // Tab and backtab advance tabs around
             KeyCode::Tab => self.tab = Tab::ALL[(self.tab.index() + 1) % Tab::ALL.len()],
             KeyCode::BackTab => self.tab = Tab::ALL[(self.tab.index() + Tab::ALL.len() - 1) % Tab::ALL.len()],
+            
             _ => match self.tab {
                 Tab::Configs => self.on_configs_key(key),
                 Tab::Edit => self.on_edit_key(key),
+                Tab::Run => self.on_run_key(key),
                 _ => {}
             },
         }
@@ -188,6 +206,7 @@ impl App {
             Action::Quit => self.quit = true,
             Action::Open(path) => self.open(&path),
             Action::Save(path) => self.save(&path),
+            Action::Run => self.start_run(),
         }
     }
 
@@ -211,6 +230,8 @@ impl App {
                     Err(e) => self.error(e),
                 }
             },
+
+            KeyCode::Char('r') => self.request_run(),
 
             KeyCode::Char('o') => self.projection = self.projection.next(),
 
@@ -331,6 +352,67 @@ impl App {
             Err(e) => self.error(e),
         }
     }
+}
 
+/// Functions for running GalaRP sims
+impl App {
     
+    /// Check that
+    ///     1. Config file is open
+    ///     2. No run is currently ongoing
+    ///     3. Whether the output directory has no shapshots.
+    ///    
+    /// User can overwrite snapshots but it will ask first.
+    fn request_run(&mut self) {
+        let Some(editor) = self.editor.as_ref() else {
+            self.error("You need to open a config file first.");
+            return;
+        };
+
+        if self.run.as_ref().is_some_and(|r| r.data.running()) {
+            self.error("A run is currently going. Type s to stop");
+        } else if let Err(e) = &editor.validation.result {
+            self.error(format!("Cannot run: {e}"));
+        } else if galarp_io::snapshot::output_path(&editor.validation.output_dir, 0).exists() {
+            let q = format!("{} already has snapshots, overwrite them?", editor.validation.output_dir.display());
+            self.confirm(&q, Action::Run);
+        } else {
+            self.start_run();
+        }
+    }
+
+    fn start_run(&mut self) {
+        let Some(editor) = self.editor.as_ref() else { return };
+
+        let text = editor.doc.text();
+        let base = editor.doc.path.parent().unwrap_or(Path::new("."));
+
+        match galarp_io::config::Config::from_str_in(&text, base) {
+            Ok(cfg) => {
+                self.run = Some(Viewer::new(RunData::start(editor.doc.name(), cfg, text)));
+                self.tab = Tab::Run;
+            },
+            Err(e) => self.error(e.0),
+        }
+    }
+
+    fn on_run_key(&mut self, key: KeyEvent) {
+
+        match key.code {
+            KeyCode::Char('r') => self.request_run(),
+            KeyCode::Char('o') => self.projection = self.projection.next(),
+            KeyCode::Char('s') | KeyCode::Esc if self.run.as_ref()
+                .is_some_and(|r| r.data.running()) => {
+                
+                self.run.as_ref().unwrap().data.stop();
+                self.info("Stopping after this step");
+            }
+            _ => {
+                if let Some(run) = self.run.as_mut() {
+                    run.on_key(key);
+                }
+            }
+        }
+    }
+
 }
