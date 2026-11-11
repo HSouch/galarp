@@ -28,7 +28,6 @@ pub struct Step {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Status {
     Running,
-    Paused,
     Done,
     Stopped,
     Failed(String),
@@ -50,6 +49,7 @@ pub struct RunData {
 
 
 impl RunData {
+    /// Start running `cfg`
     pub fn start(name: String, cfg: Config, text: String) -> Self {
         let (tx, rx) = mpsc::channel();
 
@@ -99,11 +99,12 @@ impl RunData {
         }
     }
 
+    /// Ask worker to stop
     pub fn stop(&self) {
         self.stop.store(true, Ordering::Relaxed);
     }
 
-
+    /// Poll if the worker is still running.
     pub fn running(&self) -> bool {
         self.status == Status::Running
     }
