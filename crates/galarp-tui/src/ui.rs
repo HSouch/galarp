@@ -1,18 +1,19 @@
 //! UI drawing functions and utilities
 //! 
 
-
 use ratatui::layout::{Constraint, Flex, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span, Text};
-use ratatui::widgets::{Block, Clear, List, Paragraph, Tabs, Wrap};
+use ratatui::widgets::{Block, Clear, LineGauge, List, Paragraph, Tabs, Wrap};
 use ratatui::Frame;
 
 use crate::app::{App, Mode, Tab};
 use crate::configedit::{path_string, Row};
 use crate::plotting;
-use crate::plotting::timeseries::{self, YAxis};
+use crate::plotting::timeseries::{self, Series, YAxis};
 use crate::preview::Preview;
+use crate::sim_runner::{RunData, Status};
+use crate::sim_viewer::Viewer;
 
 
 pub fn draw(frame: &mut Frame, app: &mut App) {
@@ -37,6 +38,10 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     match app.tab {
         Tab::Configs => draw_configs(frame, body, app),
         Tab::Edit => draw_edit(frame, body, app),
+        Tab::Run => match &app.run {
+            Some(v) => draw_viewer(frame, body, v, app.projection),
+            None => placeholder(frame, body, "Open config in edit tab and press r to run."),
+        }
        
         _ => placeholder(frame, body, "not built yet"),
     }
@@ -249,16 +254,124 @@ fn draw_preview(frame: &mut Frame, area: Rect, p: &Preview, projection: &plottin
 }
 
 
+fn draw_viewer(frame: &mut Frame, area: Rect, viewer: &Viewer, projection: plotting::orbits::Projection) {
+    let run = &viewer.data;
+
+    let Some(i) = viewer.shown_step() else {
+        let msg = match &run.status {
+            Status::Failed(e) => format!("Run failed: {e}"),
+            _ => "starting...".into(),
+        };
+
+        placeholder(frame, area, &msg);
+        return;
+    };
+
+    let [status, gauge, plots_row] = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Min(0)
+    ]).areas(area);
+
+    draw_run_status(frame, status, gauge, run, i, viewer.cursor.is_some());
+
+    let [fractions, p_ram, phi, orbit] = Layout::horizontal([
+        Constraint::Ratio(1, 4); 4]).areas(plots_row);
+
+    let t_end = run.cfg.run.t_end_myr;
+    let t_now = run.steps[i].t_myr;
+    
+    let col = |name: &str| -> Vec<(f64, f64)> {
+        (0..run.steps.len()).map(|k| (run.steps[k].t_myr, run.column(k, name))).collect() 
+    };
+    
+    let series = [
+        Series {name: "In Disk", color: Color::Cyan, data: col("in_disk_fraction")},
+        Series {name: "Bound", color: Color::Magenta, data: col("bound_fraction")},
+    ];
+
+    plotting::timeseries::chart(frame, fractions, "Parent Gas", &series, t_end, YAxis::Fixed(0.0, 1.0), Some(t_now));
+    plotting::timeseries::time_xy_chart(frame, p_ram, "P_ram [dyne/cm^2]", &col("p_ram_dyn_cm2"), t_end, YAxis::Auto, Some(t_now));
+
+    let phi_dw: Vec<(f64, f64)> = run.steps.iter()
+        .map(
+            |s| (s.t_myr, s.wind_dir.map_or(f64::NAN, 
+                |w| (-w[2]).clamp(-1.0, 1.0).acos().to_degrees()))
+        ).collect();
+
+    plotting::timeseries::time_xy_chart(frame, phi, "Phi_dw [deg]", &phi_dw, t_end, YAxis::Fixed(0.0, 180.0), Some(t_now));
+
+    match &viewer.preview {
+        Some(p) => {
+            let at = p.t_myr.iter().position(
+                |&t| t >= t_now
+            ).unwrap_or(p.t_myr.len().saturating_sub(1));
+        },
+        None => placeholder(frame, orbit, " no orbit "),
+    }
+}
+
+
+fn draw_run_status(frame: &mut Frame, status: Rect, gauge: Rect, run: &RunData, i: usize, stepping: bool) {
+    let step = &run.steps[i];
+    let latest = run.steps.len() - 1;
+
+    let (state, color) = match &run.status {
+        Status::Running => ("Running".to_string(), Color::Yellow),
+        Status::Done => ("Done".to_string(), Color::Green),
+        Status::Stopped => ("Stopped".to_string(), Color::Yellow),
+        Status::Failed(e) => (format!("Failed: {e}"), Color::Red),
+    };
+
+    let snapshots = run.steps.iter().filter(|s| s.snapshot.is_some()).count();
+
+    let wallclock = if run.elapsed.is_zero() { 
+            String::new() 
+        } else { 
+            let elapsed = run.elapsed.as_secs_f64();
+            format!("    {elapsed:.1} s") 
+        };
+    
+    let mut spans = vec![
+        Span::raw(format!(" {}  ", run.name)).bold(),
+        Span::styled(state, Style::new().fg(color)),
+        Span::raw(format!(
+            "  t = {} / {} Myr   step {i}/{}   {} clouds   {snapshots} snapshots  {wallclock}",
+            step.t_myr,
+            run.cfg.run.t_end_myr,
+            run.chunks,
+            run.n_clouds
+        ))
+    ];
+
+    if stepping && i < latest {
+        spans.push(Span::raw(format!("   (latest: step {latest}")).dim());
+    }
+
+    frame.render_widget(Line::from(spans), status);
+
+    let ratio = if run.chunks > 0 { (latest as f64 / run.chunks as f64 ).min(1.0)} else { 0.0 };
+
+    frame.render_widget(
+        LineGauge::default().ratio(ratio).filled_style(Style::new().fg(color)).label(""), gauge
+    );
+
+}
+
+
 fn draw_status(frame: &mut Frame, area: Rect, app: &App) {
     let line = if let Some((msg, is_error)) = &app.message {
         Line::from(format!(" {msg}").fg(if *is_error { Color::Red } else { Color::Green }))
     } else {
+        let running = app.run.as_ref().is_some_and(|r| r.data.running());
+
         let keys = match (&app.mode, app.tab) {
             (Mode::EditField { .. }, _) => "Enter set  Esc cancel  (empty: back to the default)",
             (Mode::SaveAs { .. }, _) => "Enter save  Esc cancel",
             (Mode::Confirm { .. }, _) => "y yes  n no",
             (_, Tab::Configs) => "↑↓/jk move  Enter open  r reload",
             (_, Tab::Edit) => "↑↓/jk move  Enter edit/toggle  d default  w save",
+            (_, Tab::Run) if running => "s stop  Left/Right step PgUp/PgDn x 10",
             _ => "",
         };
         Line::from(vec![
