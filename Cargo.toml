@@ -13,15 +13,17 @@ members = [
 version = "0.1.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
-rust-version = "1.85"
-repository = "https://github.com/HSouch/GalaRP"
+rust-version = "1.88"
+repository = "https://github.com/HSouch/galarp"
+readme = "README.md"
 authors = ["Harrison Souchereau"]
 keywords = ["astronomy", "galaxies", "ram-pressure", "simulations"]
 categories = ["science", "simulation"]
 
 [workspace.dependencies]
-galarp = { path = "crates/galarp" }
-galarp-io = { path = "crates/galarp-io" }
+galarp = { path = "crates/galarp", version = "0.1.0" }
+galarp-io = { path = "crates/galarp-io", version = "0.1.0" }
+galarp-run = { path = "crates/galarp-run", version = "0.1.0" }
 rayon = "1.10"
 serde = { version = "1", features = ["derive"] }
 
