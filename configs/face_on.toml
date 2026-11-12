@@ -1,6 +1,7 @@
 # Restricted run, case 2: a face-on 1000 km/s wind, no shadowing.
 #
-#   cargo run --release -p bigwig-restricted -- configs/restricted/face_on.toml
+#   galarp-run configs/face_on.toml
+#   (or from source: cargo run --release -p galarp-run -- configs/face_on.toml)
 
 [run]
 output_dir = "runs/face_on"

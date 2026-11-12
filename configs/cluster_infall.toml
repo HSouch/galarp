@@ -1,0 +1,66 @@
+
+
+[run]
+output_dir = "runs/restricted/cluster_infall"
+t_end_myr = 2000
+dt_max_myr = 2
+snapshot_interval_myr = 20
+
+[box]
+side_kpc = 80
+
+[ram_pressure]
+enabled = true
+surface_density_msun_pc2 = 10
+drag_coefficient = 0.5
+
+[ram_pressure.shadow]
+enabled = true
+bin_width_kpc = 2
+
+[cluster.gas]
+model = "beta"
+rho0_g_cm3 = 2e-26
+r_c_kpc = 100
+beta = 0.6
+
+[[cluster.potential]]
+type = "nfw_virial"
+m_vir_msun = 1e15
+r_vir_kpc = 2000
+concentration = 5
+
+[[galaxy]]
+name = "milky_way"
+
+[[galaxy.potential]]
+type = "miyamoto_nagai"
+mass_msun = 5e10
+a_kpc = 3.0
+b_kpc = 0.3
+
+[[galaxy.potential]]
+type = "hernquist"
+mass_msun = 1e10
+a_kpc = 0.5
+
+[[galaxy.potential]]
+type = "nfw"
+m_msun = 6e11
+r_s_kpc = 15
+
+[galaxy.disk]
+mass_msun = 5e9
+scale_length_kpc = 4
+r_max_kpc = 20
+sound_speed_km_s = 20
+n_particles = 5000
+
+# Integrated as a point mass in the cluster potential. The disk lies in the x-y plane, so
+# the wind starts nearly edge-on (motion mostly along -x) and turns as the orbit bends.
+[galaxy.orbit]
+mode = "integrate"
+position_kpc = [1500, 0, 0]
+velocity_km_s = [-600, 250, 300]
+dt_myr = 0.1
+output_dt_myr = 1.0
