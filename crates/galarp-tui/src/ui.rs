@@ -11,6 +11,7 @@ use crate::app::{App, Mode, Tab};
 use crate::configedit::{path_string, Row};
 use crate::plotting;
 use crate::plotting::timeseries::{self, Series, YAxis};
+use crate::plotting::snapshots::{Region, SHADOW_COLORS};
 use crate::preview::Preview;
 use crate::sim_runner::{RunData, Status};
 use crate::sim_viewer::Viewer;
@@ -223,7 +224,7 @@ fn draw_edit(frame: &mut Frame, area: Rect, app: &mut App) {
     match &v.preview {
         Some(Ok(p)) => draw_preview(frame, plots, p, &app.projection, None),
         Some(Err(e)) => placeholder(frame, plots, &format!("no preview: {e}")),
-        None => placeholder(frame, text, "no preview until the config parses"),
+        None => placeholder(frame, plots, "no preview until the config parses"),
     }
 }
 
@@ -267,14 +268,33 @@ fn draw_viewer(frame: &mut Frame, area: Rect, viewer: &Viewer, projection: plott
         return;
     };
 
-    let [status, gauge, plots_row] = Layout::vertical([
+    let [status, gauge, clouds, plots_row] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(1),
+        Constraint::Percentage(60),
         Constraint::Min(0)
     ]).areas(area);
-
     draw_run_status(frame, status, gauge, run, i, viewer.cursor.is_some());
+    
+    let half = viewer.half_width_kpc();
+    let diag = &run.cfg.diagnostics;
+    let (r_reg, z_reg) = (diag.disk_region_radius_kpc, diag.disk_region_half_height_kpc);
+    let [face_on, edge_on] = Layout::horizontal([Constraint::Percentage(50); 2]).areas(clouds);
+    let wind = run.steps[i].wind_dir;
+    
+    let (_, cloud_frame) = run.frame_at(i).map_or((i, None),  |(k, f)| (k, Some(f)) );
+    
+    let pick = |a: usize, b: usize| -> Vec<(f64, f64, u8)> {
+        let Some(f) = cloud_frame else { return Vec::new() };
+        f.pos.iter().zip(&f.shadow).map(|(p, &s)| (p[a] as f64, p[b] as f64, s)).collect()
+    };
 
+    let face_wind = wind.map(|w| (w[0], w[1]));
+    let edge_wind = wind.map(|w| (w[0], w[2]));
+
+    plotting::snapshots::cloud_canvas(frame, face_on, Line::from("Face-on (x-y)"), &pick(0, 1), half, Region::Circle(r_reg), face_wind);
+    plotting::snapshots::cloud_canvas(frame, edge_on, Line::from("Edge-on (x-z)"), &pick(0, 2), half, Region::Slab(r_reg, z_reg), edge_wind);
+    
     let [fractions, p_ram, phi, orbit] = Layout::horizontal([
         Constraint::Ratio(1, 4); 4]).areas(plots_row);
 
@@ -306,6 +326,7 @@ fn draw_viewer(frame: &mut Frame, area: Rect, viewer: &Viewer, projection: plott
             let at = p.t_myr.iter().position(
                 |&t| t >= t_now
             ).unwrap_or(p.t_myr.len().saturating_sub(1));
+            plotting::orbits::orbit_canvas(frame, orbit, &p.pos, p.r_vir_kpc, projection, Some(at));
         },
         None => placeholder(frame, orbit, " no orbit "),
     }
@@ -328,9 +349,10 @@ fn draw_run_status(frame: &mut Frame, status: Rect, gauge: Rect, run: &RunData, 
     let wallclock = if run.elapsed.is_zero() { 
             String::new() 
         } else { 
-            let elapsed = run.elapsed.as_secs_f64();
-            format!("    {elapsed:.1} s") 
+            format!("    {:.1} s", run.elapsed.as_secs_f64()) 
         };
+       
+
     
     let mut spans = vec![
         Span::raw(format!(" {}  ", run.name)).bold(),
