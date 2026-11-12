@@ -188,6 +188,13 @@ impl App {
             KeyCode::Tab => self.tab = Tab::ALL[(self.tab.index() + 1) % Tab::ALL.len()],
             KeyCode::BackTab => self.tab = Tab::ALL[(self.tab.index() + Tab::ALL.len() - 1) % Tab::ALL.len()],
             
+            KeyCode::Char('s') | KeyCode::Esc if self.run.as_ref()
+                .is_some_and(|r| r.data.running()) => {
+                
+                self.run.as_ref().unwrap().data.stop();
+                self.info("Stopping after this step");
+            }
+            
             _ => match self.tab {
                 Tab::Configs => self.on_configs_key(key),
                 Tab::Edit => self.on_edit_key(key),
@@ -275,7 +282,7 @@ impl App {
                 let Some(path) = self.selected().cloned() else { return };
                 
                 if self.dirty() { 
-                    self.confirm("Open this config and drop saved edits?", Action::Open(path));
+                    self.confirm("Open this config and drop unsaved edits?", Action::Open(path));
                 } else { 
                     self.open(&path);
                 }
@@ -401,12 +408,6 @@ impl App {
         match key.code {
             KeyCode::Char('r') => self.request_run(),
             KeyCode::Char('o') => self.projection = self.projection.next(),
-            KeyCode::Char('s') | KeyCode::Esc if self.run.as_ref()
-                .is_some_and(|r| r.data.running()) => {
-                
-                self.run.as_ref().unwrap().data.stop();
-                self.info("Stopping after this step");
-            }
             _ => {
                 if let Some(run) = self.run.as_mut() {
                     run.on_key(key);
