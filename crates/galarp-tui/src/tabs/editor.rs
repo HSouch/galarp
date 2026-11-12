@@ -36,21 +36,17 @@ impl Editor {
 
     /// Move through the editor by `step` steps.
     pub fn move_by(&mut self, step: isize) {
-        let rows = &self.doc.rows;
+        let fields: Vec<usize> = self.doc.rows.iter().enumerate()
+            .filter(|(_, r)| matches!(r, Row::Field { .. }))
+            .map(|(i, _)| i)
+            .collect();
+        if fields.is_empty() { return; }
 
-        let mut i = self.list.selected().unwrap_or(0) as isize;
+        let current = self.list.selected().unwrap_or(fields[0]);
+        let k = fields.iter().position(|&i| i >= current).unwrap_or(fields.len() - 1) as isize;
+        let k = (k + step).clamp(0, fields.len() as isize - 1) as usize;
 
-        loop {
-            i += step;
-            if i < 0 || i >= rows.len() as isize {
-                return;
-            }
-
-            if matches!(rows[i as usize], Row::Field { .. }) {
-                self.list.select(Some(i as usize));
-                return;
-            }
-        }
+        self.list.select(Some(fields[k]));
     }
 
     /// Reselect a path 
