@@ -14,8 +14,8 @@ pub struct Preview {
     pub p_ram_dyn_cm2: Vec<f64>,
 
     pub phi_dw_deg: Vec<f64>,
-    pub speed_km_s: Vec<f64>,
-    pub n_h_cm3: Vec<f64>,
+    // pub speed_km_s: Vec<f64>,
+    // pub n_h_cm3: Vec<f64>,
 
     pub r_vir_kpc: Option<f64>,
     pub ram_pressure_on: bool,
@@ -42,8 +42,8 @@ impl Preview {
             pos: rows.iter().map(|r| r.pos).collect(),
             p_ram_dyn_cm2: rows.iter().map(|row| row.p_ram_dyn_cm2).collect(),
             phi_dw_deg: rows.iter().map(|row| phi_dw_deg(&row.vel, &normal)).collect(),
-            speed_km_s: rows.iter().map(|row| row.speed_km_s).collect(),
-            n_h_cm3: rows.iter().map(|row| row.n_h_icm_cm3).collect(),
+            // speed_km_s: rows.iter().map(|row| row.speed_km_s).collect(),
+            // n_h_cm3: rows.iter().map(|row| row.n_h_icm_cm3).collect(),
             r_vir_kpc,
             ram_pressure_on: cfg.ram_pressure.enabled,
         })
