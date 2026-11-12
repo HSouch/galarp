@@ -9,6 +9,11 @@ use std::sync::Arc;
 use galarp_io::config::Config;
 use galarp_run::{Run, GALAXY_COLUMNS};
 
+
+/// Most cloud positions kept for stepping back through the snapshots.
+const MAX_STORED_CLOUDS: usize = 1_000_000;
+
+
 pub enum Msg {
     Started { summary: Vec<String>, chunks: u64, n_clouds: usize},
     Step(Box<Step>),
@@ -22,8 +27,17 @@ pub struct Step {
 
     pub snapshot: Option<u64>,
 
+    pub clouds: Option<Frame>,
+
     pub wind_dir: Option<[f64; 3]>,
 }
+
+
+pub struct Frame {
+    pub pos: Vec<[f32; 3]>,
+    pub shadow: Vec<u8>,
+}
+
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Status {
@@ -64,12 +78,24 @@ impl RunData {
                 let chunks = run.chunks();
                 let n_clouds = run.clouds.galaxy.iter().filter(|&&g| g == 0).count();
 
+                let stride = (n_clouds * (chunks as usize + 1)).div_ceil(MAX_STORED_CLOUDS).max(1) as u64;
+
                 let _ = tx.send(Msg::Started { summary: run.summary.clone(), chunks, n_clouds });
                 run.execute(|p| {
+                    let keep = p.chunk % stride == 0 || p.chunk == p.chunks;
+                    let clouds = keep.then( || {
+                        let parent = (0..p.clouds.len()).filter(
+                            |&i| p.clouds.galaxy[i] == 0
+                        );
+                        let (pos, shadow) = parent.map(|i| (p.galaxy_coords[i].map(|x| x as f32), quantize(p.clouds.shadow[i]))).unzip();
+                        Frame { pos, shadow } 
+                    });
+
                     let step = Step { 
                         t_myr: p.t_myr, 
                         row: p.row.to_vec(), 
                         snapshot: p.snapshot, 
+                        clouds,
                         wind_dir: p.wind_dir[0] 
                     };
                     // A failed send means the UI dropped the run: stop.
@@ -146,6 +172,15 @@ impl RunData {
     pub fn column(&self, i: usize, name: &str) -> f64 {
         let j = GALAXY_COLUMNS.iter().position(|&c| c == name).expect("a log column");
         self.steps[i].row[1 + j]
+    }
+
+
+    pub fn frame_at(&self, i: usize) -> Option<(usize, &Frame)> {
+        let last = self.steps.len().checked_sub(1)?;
+
+        (0..=i.min(last)).rev().find_map(|k| self.steps[k].clouds.as_ref().map(
+            |f| (k, f)
+        ))
     }
 
 }
