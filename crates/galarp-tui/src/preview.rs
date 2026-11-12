@@ -5,6 +5,7 @@ use galarp_io::config::{Config, PotentialTerm};
 /// Number of samples for generating curves 
 const NSAMPLES: usize = 400;
 
+#[derive(Clone)]
 pub struct Preview {
     pub t_myr: Vec<f64>,
 

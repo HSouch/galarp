@@ -21,9 +21,7 @@ pub struct Viewer {
 
 impl Viewer {
 
-    pub fn new(data: RunData) -> Self {
-        let preview = Preview::new(&data.cfg).ok();
-
+    pub fn new(data: RunData, preview: Option<Preview>) -> Self {
         Self { data, preview, cursor: None, view_kpc: None }
     }
 
@@ -36,12 +34,10 @@ impl Viewer {
         })
     }
 
-
     pub fn shown_step(&self) -> Option<usize> {
         let n = self.data.steps.len();
         (n > 0).then(|| self.cursor.unwrap_or(n - 1).min(n-1))
     }
-
 
     pub fn on_key(&mut self, key: KeyEvent) -> bool {
         let n = self.data.steps.len();
