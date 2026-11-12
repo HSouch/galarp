@@ -3,7 +3,6 @@ use std::path::{Path, PathBuf};
 
 use galarp_io::config::Config;
 use galarp_io::snapshot::output_path;
-use galarp_run::Run;
 
 use toml_edit::{DocumentMut, Item, Table, TableLike, Value};
 
