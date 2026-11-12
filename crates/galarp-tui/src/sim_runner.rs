@@ -59,6 +59,8 @@ pub struct RunData {
     pub elapsed: Duration,
     rx: Option<Receiver<Msg>>,
     stop: Arc<AtomicBool>,
+
+    handle: Option<thread::JoinHandle<()>>,
 }
 
 
@@ -71,8 +73,10 @@ impl RunData {
         let stop_worker = Arc::clone(&stop);
         // Clone the config object to allow the worker to use it
         let worker_cfg = cfg.clone();
+
         
-        thread::spawn(move || {
+        
+        let handle = thread::spawn(move || {
             let result = (|| -> Result<bool, String> {
                 let mut run = Run::new(worker_cfg, text).map_err(|e| e.to_string())?;
                 let chunks = run.chunks();
@@ -121,7 +125,8 @@ impl RunData {
             started: Instant::now(),
             elapsed: Duration::ZERO,
             rx: Some(rx),
-            stop
+            stop,
+            handle: Some(handle)
         }
     }
 
@@ -129,6 +134,15 @@ impl RunData {
     pub fn stop(&self) {
         self.stop.store(true, Ordering::Relaxed);
     }
+
+    /// Ask the worker to stop, wait for it to finish the current step.
+    pub fn stop_and_join(&mut self) {
+        self.stop();
+        if let Some(h) = self.handle.take() {
+            let _ = h.join();
+        }
+    }
+
 
     /// Poll if the worker is still running.
     pub fn running(&self) -> bool {

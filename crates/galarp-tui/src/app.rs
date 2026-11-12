@@ -178,7 +178,10 @@ impl App {
 
     fn on_normal_key(&mut self, key: KeyEvent) {
         match key.code {
-            // q sets mode to quit (will might want to ask for saving later)
+            // q sets mode to quit, first checks to ensure any runs aren't happening
+            KeyCode::Char('q') if self.run.as_ref().is_some_and(|r| r.data.running()) => {
+                self.confirm("A run is going. Stop and quit?", Action::Quit);
+            }
             KeyCode::Char('q') if self.dirty() => self.confirm("Quit without saving edits?", Action::Quit),
             
             KeyCode::Char('q') => self.quit = true,
@@ -210,7 +213,12 @@ impl App {
 
     fn act(&mut self, action: Action) {
         match action {
-            Action::Quit => self.quit = true,
+            Action::Quit => {
+                if let Some(v) = self.run.as_mut() {
+                    v.data.stop_and_join();
+                }
+                self.quit = true;
+            }
             Action::Open(path) => self.open(&path),
             Action::Save(path) => self.save(&path),
             Action::Run => self.start_run(),
