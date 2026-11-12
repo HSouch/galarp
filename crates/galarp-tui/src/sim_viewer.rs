@@ -1,3 +1,5 @@
+//! A run to be viewed:
+//!     Data, orbit preview, which step is shown, and zoom
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 
@@ -8,8 +10,12 @@ use crate::sim_runner::RunData;
 pub struct Viewer {
     pub data: RunData,
     pub preview: Option<Preview>,
-
+    
+    /// Log step shown.
     pub cursor: Option<usize>,
+    
+    // Half-width of the cloud plots (for zooming). If none it is interpreted from the disk size.
+    pub view_kpc: Option<f64>,
 }
 
 
@@ -18,7 +24,16 @@ impl Viewer {
     pub fn new(data: RunData) -> Self {
         let preview = Preview::new(&data.cfg).ok();
 
-        Self { data, preview, cursor: None }
+        Self { data, preview, cursor: None, view_kpc: None }
+    }
+
+    /// Half-width of the cloud plots. This sets the zoom.
+    pub fn half_width_kpc(&self) -> f64 {
+        self.view_kpc.unwrap_or_else(|| {
+            let cfg = &self.data.cfg;
+            let region = cfg.diagnostics.disk_region_radius_kpc;
+            cfg.galaxy[0].disk.as_ref().map_or(30.0, |d| 1.25 * d.r_max_kpc.max(region))
+        })
     }
 
 
@@ -43,12 +58,12 @@ impl Viewer {
             KeyCode::PageDown => self.cursor = move_to(at + 10),
             KeyCode::Home => self.cursor = Some(0),
             KeyCode::End => self.cursor = None,
+
+            KeyCode::Char('+') | KeyCode::Char('=') => self.view_kpc = Some(self.half_width_kpc() / 1.25),
+            KeyCode::Char('-') => self.view_kpc = Some(self.half_width_kpc() * 1.25),
+            KeyCode::Char('0') => self.view_kpc = None,
             _ => return false,
         }
-
         true
     }
-
-    
-
 }
