@@ -318,7 +318,7 @@ pub const CORE: &[(&str, &[(&str, &str)])] = &[
     (
         "run",
         &[
-            ("run.output_dir", "directory for snapshots and log.csv (relative to where galarp-tui runs)"),
+            ("run.output_dir", "directory for snapshots and log.csv (relative to the configuration file location)"),
             ("run.t_end_myr", "end time"),
             ("run.dt_max_myr", "log interval; a whole multiple of galarp.dt_myr"),
             ("run.snapshot_interval_myr", "snapshot interval; a whole multiple of run.dt_max_myr"),
