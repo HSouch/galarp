@@ -419,7 +419,10 @@ impl App {
 
         match galarp_io::config::Config::from_str_in(&text, base) {
             Ok(cfg) => {
-                self.run = Some(Viewer::new(RunData::start(editor.doc.name(), cfg, text)));
+                let preview = editor.validation.preview.as_ref()
+                    .and_then(|p| p.as_ref().ok())
+                    .cloned();
+                self.run = Some(Viewer::new(RunData::start(editor.doc.name(), cfg, text), preview));
                 self.tab = Tab::Run;
             },
             Err(e) => self.error(e.0),
