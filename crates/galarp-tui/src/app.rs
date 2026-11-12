@@ -280,6 +280,7 @@ impl App {
         let Some(ed) = self.editor.as_mut() else { return Ok(())};
         ed.doc.set(path, text)?;
         ed.revalidate();
+        ed.reselect(path);      // After revalidation, reselect the same row afterwards.
         Ok(())
     }
 

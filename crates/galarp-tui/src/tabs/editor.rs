@@ -1,7 +1,7 @@
 
 use ratatui::widgets::ListState;
 
-use crate::configedit::{ConfigDoc, Row, Segment, Validation};
+use crate::{configedit::{ConfigDoc, Row, Segment, Validation}, tabs::configs::find};
 
 
 pub struct Editor {
@@ -34,6 +34,7 @@ impl Editor {
         }
     }
 
+    /// Move through the editor by `step` steps.
     pub fn move_by(&mut self, step: isize) {
         let rows = &self.doc.rows;
 
@@ -50,6 +51,23 @@ impl Editor {
                 return;
             }
         }
+    }
+
+    /// Reselect a path 
+    /// Used to ensure selected row isn't on a header after edit.
+    pub fn reselect(&mut self, path: &[Segment]) {
+        let rows = &self.doc.rows;
+
+        let is_field = |i: usize| matches!(rows[i], Row::Field { .. });
+        
+        let i = rows.iter()
+            .position(|r| matches!(r, Row::Field{ path: p, ..} if p.as_slice() == path))
+            .or_else(|| {
+                let old = self.list.selected().unwrap_or(0).min(rows.len().saturating_sub(1));
+                (old..rows.len()).chain((0..old).rev()).find(|&i| is_field(i))
+            });
+
+            self.list.select(i);
     }
 
     pub fn revalidate(&mut self) {
