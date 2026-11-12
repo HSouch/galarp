@@ -207,8 +207,7 @@ impl ConfigDoc {
 
         let result = cfg
             .map_err(|e| e.0)
-            .and_then(|cfg| Run::new(cfg, text).map(|r| r.summary)
-            .map_err(|e| e.to_string())
+            .and_then(|cfg| galarp_run::dry_run(&cfg).map_err(|e| e.to_string())
         );
         
         // Check if output already has snapshots

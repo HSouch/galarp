@@ -1,7 +1,6 @@
 use std::path::{Path, PathBuf};
 
 use galarp_io::config::Config;
-use galarp_run::Run;
 
 
 pub fn find(dir: &Path) -> Vec<PathBuf> {
@@ -43,8 +42,7 @@ pub fn check(path: &Path) -> Check {
     let base = path.parent().unwrap_or(Path::new("."));
     let summary = Config::from_str_in(&text, base)
         .map_err(|e| e.0)
-        .and_then(|cfg| Run::new(cfg, text.clone()).map(|r| r.summary).map_err(|e| e.to_string()));
-    
+        .and_then(|cfg| galarp_run::dry_run(&cfg).map_err(|e| e.to_string()));
     Check{ summary, text }
 }
 
