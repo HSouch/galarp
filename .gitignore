@@ -1,6 +1,6 @@
 /target
 
-.DS_store
+.DS_Store
 
 runs/
 
@@ -8,7 +8,7 @@ galarp-tui-old/
 
 personal/
 
-configs/
+configs/*
 !configs/face_on.toml
 !configs/cluster_infall.toml
 

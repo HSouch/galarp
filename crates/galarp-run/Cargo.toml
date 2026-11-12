@@ -1,9 +1,15 @@
 [package]
 name = "galarp-run"
-description = "Run GalaRP from an input config file"
-version.workspace = true
+description = "Command-line runner for GalaRP ram-pressure stripping simulations from a TOML config"
 edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
 license.workspace = true
+authors.workspace = true
+repository.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories = ["science", "simulation", "command-line-utilities"]
 
 [dependencies]
 galarp.workspace = true
