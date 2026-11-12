@@ -1,7 +1,7 @@
 
 use ratatui::widgets::ListState;
 
-use crate::{configedit::{ConfigDoc, Row, Segment, Validation}, tabs::configs::find};
+use crate::configedit::{ConfigDoc, Row, Segment, Validation};
 
 
 pub struct Editor {
