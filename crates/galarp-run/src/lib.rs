@@ -89,24 +89,9 @@ impl Run {
         if clouds.is_empty() {
             return Err("no galaxy has a [galaxy.disk], so no clouds".into());
         }
-        
-        let  rpc = &cfg.ram_pressure;
 
-        summary.push(match &rp {
-            Some(_) => format!(
-                "ram pressure: Sigma {} Msun/pc^2, C_D {}, rho at the {}, shadow {}",
-                rpc.surface_density_msun_pc2,
-                rpc.drag_coefficient,
-                rpc.density_at,
-                if rpc.shadow.enabled { format!(" {} kpc columns", rpc.shadow.bin_width_kpc) } else { "off".into() }
-            ),
-            None => "ram pressure: off (gravity only)".into(),
-        });
-
-        summary.push(format!(
-            "run {} Myr in RK4 steps of {} Myr, log every {} Myr, snapshot every {} Myr",
-            cfg.run.t_end_myr, cfg.galarp.dt_myr, cfg.run.dt_max_myr, cfg.run.snapshot_interval_myr
-        ));
+        summary.push(ram_pressure_line(&cfg, rp.is_some()));
+        summary.push(run_line(&cfg));
         Ok(Self { cfg, config_text, field, rp, clouds, summary, steps_per_chunk })
     }
 
@@ -186,6 +171,57 @@ impl Run {
         }
         Ok(true)
     }
+}
+
+
+
+pub fn dry_run(cfg: &Config) -> Result<Vec<String>, Error> {
+    cfg.rk4_steps_per_dt_max()?;
+    cfg.orbit_tables()?;
+    let rp = cfg.ram_pressure()?;
+
+    let mut summary = Vec::new();
+    let mut any_disk = false;
+    for k in 0..cfg.galaxy.len() {
+        let Some((params, n)) = cfg.disk(k) else {
+            summary.push(format!("  {}: no disk (gravity only)", cfg.galaxy_name(k)));
+            continue;
+        };
+        any_disk = true;
+        let sigma_z = cfg.galarp.vertical_dispersion_km_s.unwrap_or(params.sound_speed);
+        summary.push(format!(
+            "  {}: {n} clouds of {:.3e} Msun, sigma_z {sigma_z} km/s",
+            cfg.galaxy_name(k), params.mass / n as f64 / units::MSUN));
+    }
+    if !any_disk {
+        return Err("no galaxy has a [galaxy.disk], so no clouds".into());
+    }
+
+    summary.push(ram_pressure_line(cfg, rp.is_some()));
+    summary.push(run_line(cfg));
+    Ok(summary)
+}
+
+fn ram_pressure_line(cfg: &Config, on: bool) -> String {
+    let rpc = &cfg.ram_pressure;
+
+    match on {
+        true => format!(
+            "ram pressure: Sigma {} Msun/pc^2, C_D {}, rho at the {}, shadow {}",
+            rpc.surface_density_msun_pc2,
+            rpc.drag_coefficient,
+            rpc.density_at,
+            if rpc.shadow.enabled { format!(" {} kpc columns", rpc.shadow.bin_width_kpc) } else { "off".into() }
+        ),
+        false => "ram pressure: off (gravity only)".into(),
+    }
+}   
+
+fn run_line(cfg: &Config) -> String {
+    let line: String = format!("run {} Myr in RK4 steps of {} Myr, log every {} Myr, snapshot every {} Myr",
+            cfg.run.t_end_myr, cfg.galarp.dt_myr, cfg.run.dt_max_myr, cfg.run.snapshot_interval_myr
+        );
+    line 
 }
 
 
