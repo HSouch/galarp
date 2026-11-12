@@ -154,7 +154,12 @@ impl App {
             Mode::Help => { self.mode = Mode::Normal },
             Mode::EditField { path, mut input } => match key.code {
                 KeyCode::Esc => {},
-                KeyCode::Enter => self.commit_field(&path, &input.text),
+                KeyCode::Enter => {
+                    if let Err(e) = self.commit_field(&path, &input.text) {
+                        self.error(e);
+                        self.mode = Mode::EditField { path, input }
+                    }
+                }
                 _ => {
                     input.on_key(key);
                     self.mode = Mode::EditField { path, input };
@@ -252,7 +257,9 @@ impl App {
 
             KeyCode::Delete | KeyCode::Char('d') => {
                 let Some(path) = ed.selected_path().map(<[Segment]>::to_vec) else { return };
-                self.commit_field(&path, "");
+                if let Err(e) = self.commit_field(&path, "") {
+                    self.error(e)
+                }
             },
             
             KeyCode::Char('w') => {
@@ -269,12 +276,11 @@ impl App {
     }
 
 
-    fn commit_field(&mut self, path: &[Segment], text: &str) {
-        let Some(ed) = self.editor.as_mut() else { return };
-        match ed.doc.set(path, text) {
-            Ok(()) => ed.revalidate(),
-            Err(e) => self.error(e),
-        }
+    fn commit_field(&mut self, path: &[Segment], text: &str) -> Result<(), String> {
+        let Some(ed) = self.editor.as_mut() else { return Ok(())};
+        ed.doc.set(path, text)?;
+        ed.revalidate();
+        Ok(())
     }
 
 
@@ -349,11 +355,16 @@ impl App {
         let out_key = parse_path("run.output_dir");
         let mut note = String::new();
 
+        let before = editor.doc.doc.clone();
+
         if let (Some(old), Some(new), Some(dir)) = (old, new, editor.doc.str_value(&out_key)) {
             let dir = PathBuf::from(dir);
             if old != new && dir.file_name().is_some_and(|n| n.to_string_lossy() == old) {
                 let moved = dir.with_file_name(&new);
-                let _ = editor.doc.set(&out_key, &format!("{:?}", moved.to_string_lossy()));
+                if let Err(e) = editor.doc.set_str(&out_key, &moved.to_string_lossy()) {
+                    self.error(e);
+                    return;
+                }
                 note = format!("; run.output_dir is now {}", moved.display());
             }
         }
@@ -364,7 +375,10 @@ impl App {
                 self.info(format!("saved {shown}{note}"));
                 self.rescan(Some(path));
             }
-            Err(e) => self.error(e),
+            Err(e) => {
+                editor.doc.doc = before;
+                self.error(e);
+            }
         }
     }
 }

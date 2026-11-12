@@ -160,6 +160,11 @@ impl ConfigDoc {
         Ok(())
     }
 
+    /// Set `path` to a TOML string, keeping the old value's comments.
+    pub fn set_str(&mut self, path: &[Segment], s: &str) -> Result<(), String> {
+        set(&mut self.doc, path, Some(Value::from(s)))
+    }
+
     /// Flip a boolean value
     pub fn toggle(&mut self, path: &[Segment]) -> Result<bool, String> {
         let current = get(&self.doc, path)
