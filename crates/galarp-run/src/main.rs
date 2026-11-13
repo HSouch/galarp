@@ -216,29 +216,28 @@ fn plan(configs: &[PathBuf]) -> Vec<Plan> {
 }
 
 
+/// Enum to handle outcomes of GalaRP events
+/// 
 enum Outcome {
     Ran(Duration),
     Skipped,
     Failed(String),
 }
 
-
-
-
+/// User-confirmed statement.
 fn confirm(question: &str) -> bool {
     print!("{question} [y/N] ");
     let _ = io::stdout().flush();
     let mut line = String::new();
     
     if io::stdin().lock().read_line(&mut line).is_err() {
-            return false;
-        }
+        return false;
+    }
 
     matches!(line.trim().to_ascii_lowercase().as_str(), "y" | "yes")
 }
 
 /// Print a summary table of the GalaRP runs performed in `--all` mode.
-/// 
 fn print_summary(results: &[(&Plan, Outcome)], dry_run: bool, total: Duration) {
     let name = |p: &Plan| p.path.file_name()
         .map_or_else(|| p.path.display().to_string(), |n| n.to_string_lossy().into_owned());
