@@ -116,6 +116,12 @@ impl Config {
         });
 
         let density_at = if rp.density_at == "particle" { DensityAt::Particle } else { DensityAt::Galaxy };
-        Ok(Some(RamPressure { icm: self.cluster_gas()?, surface_density: sigma, density_at, drag_coeff, shadow }))
+        Ok(Some(RamPressure { 
+            icm: self.cluster_gas()?, 
+            surface_density: sigma, 
+            density_at, 
+            drag_coeff, 
+            shadow 
+        }))
     }
 }
