@@ -2,19 +2,33 @@
 //! the disk-wind angle.
 //! 
 
-use super::utils::{dot, basis};
+use std::f64::consts::PI;
+
+// use super::utils::{dot, basis, sub, norm};
+use super::utils::basis;
+use crate::utils::{dot, sub, norm};
 
 use rayon::prelude::*;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct DynamicShadow {
     pub bin_width: f64,
+
+    pub refill_length: f64,
+    /// Radius where you don't shadow anymore
+    pub cutoff_radius: f64,
+    pub cutoff_taper: f64,
 }
 
 
 impl Default for DynamicShadow {
     fn default() -> Self {
-        Self {bin_width: 2.0}
+        Self {
+            bin_width: 2.0,
+            refill_length: f64::INFINITY,
+            cutoff_radius: f64::INFINITY,
+            cutoff_taper: 0.0,
+        }
     }
 }
 
@@ -52,6 +66,12 @@ impl DynamicShadow {
         
         let columns: Vec<&[usize]> = 
             order.chunk_by(|&a, &b| keys[a].0 == keys[b].0 && keys[a].1 == keys[b].1).collect();
+        
+        let weight: Vec<f64> = pos
+            .par_iter()
+            .map(|x| self.weight(norm(&sub(&x, &center))))
+            .collect();
+        
         let cell_area = w * w;
         // March through the columns and determine shadowing for those particles.
         // Done in parallel using rayon par_iter()
@@ -59,17 +79,27 @@ impl DynamicShadow {
             .par_iter()
             .map(|col| {
                 let mut phi = 1.0;
-                col.iter()
-                    .map(|&i| {
-                        let tau = area[i] / cell_area;
-                        // 1 - e^-tau, accurate for small tau.
-                        let absorbed = -(-tau).exp_m1();
-                        let self_shielding = if tau > 0.0 { absorbed / tau } else { 1.0 };
-                        let s = phi * self_shielding;
-                        phi *= 1.0 - absorbed;
-                        (i, s)
-                    })
-                    .collect()
+                let mut d_prev: Option<f64> = None;
+                col.iter().map(|&i| {
+                    let d = keys[i].2;
+                    if let Some(dp) = d_prev {
+                        phi = 1.0 - (1.0 - phi) * (-(d-dp) / self.refill_length).exp();
+                    }
+                    d_prev = Some(d);
+                    
+                    let wt = weight[i];
+
+                    let tau = wt * area[i] / cell_area;
+
+                    // 1 - e^-tau, accurate for small tau.
+                    let absorbed = -(-tau).exp_m1();
+                    let self_shielding = if tau > 0.0 { absorbed / tau } else { 1.0 };
+                    let s = phi * self_shielding;
+                    phi *= 1.0 - absorbed;
+                    (i, s)
+                
+                })
+                .collect()
             })
             .collect();
         let mut s = vec![1.0; pos.len()];
@@ -77,6 +107,12 @@ impl DynamicShadow {
             s[i] = v;
         }
         s
+    }
+
+    fn weight(&self, r: f64) -> f64 {
+        if r <= self.cutoff_radius { 1.0 }
+        else if r >= self.cutoff_radius + self.cutoff_taper { 0.0 }
+        else { 0.5 * (1.0 + (PI * (r - self.cutoff_radius) / self.cutoff_taper).cos())} 
     }
 }
 
@@ -88,7 +124,7 @@ mod tests {
     #[test]
     fn upstream_is_opposite_the_wind_direction() {
         // Wind blowing along -x: the particle at larger x is upstream.
-        let shadow = DynamicShadow { bin_width: 1.0 };
+        let shadow = DynamicShadow::default();
         let pos = [[-2.0, 0.2, 0.3], [2.0, 0.2, 0.3]];
         let s = shadow.factors([-1.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0; 3], &pos, &[0.5; 2]);
         assert!(s[1] > s[0], "{s:?}");

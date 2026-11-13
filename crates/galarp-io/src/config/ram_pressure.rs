@@ -31,6 +31,9 @@ pub struct ShadowConfig {
     pub enabled: bool,
     /// Side of the square columns along the wind.
     pub bin_width_kpc: f64,
+    pub refill_length_kpc: f64,
+    pub cutoff_radius_kpc: f64,
+    pub cutoff_taper_kpc: f64,
 }
 
 // ---------------------------------------------------------------------------
@@ -51,7 +54,12 @@ impl Default for RamPressureConfig {
 
 impl Default for ShadowConfig {
     fn default() -> Self {
-        Self { enabled: false,  bin_width_kpc: 2.0 }
+        Self { enabled: false,  
+            bin_width_kpc: 2.0, 
+            refill_length_kpc: f64::INFINITY, 
+            cutoff_radius_kpc: f64::INFINITY, 
+            cutoff_taper_kpc: 0.0 
+        }
     }
 }
 
@@ -102,6 +110,9 @@ impl Config {
         let drag_coeff = rp.drag_coefficient;
         let shadow = rp.shadow.enabled.then_some(DynamicShadow {
             bin_width: rp.shadow.bin_width_kpc,
+            refill_length: rp.shadow.refill_length_kpc,
+            cutoff_radius: rp.shadow.cutoff_radius_kpc,
+            cutoff_taper: rp.shadow.cutoff_taper_kpc,
         });
 
         let density_at = if rp.density_at == "particle" { DensityAt::Particle } else { DensityAt::Galaxy };
