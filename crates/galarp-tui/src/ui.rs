@@ -349,7 +349,8 @@ fn draw_run_status(frame: &mut Frame, status: Rect, gauge: Rect, run: &RunData, 
     let wallclock = if run.elapsed.is_zero() { 
             String::new() 
         } else { 
-            format!("    {:.1} s", run.elapsed.as_secs_f64()) 
+            let elapsed: String = format!("    {:.1} s", run.elapsed.as_secs_f64());
+            elapsed
         };
        
 
