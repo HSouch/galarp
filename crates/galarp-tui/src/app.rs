@@ -140,9 +140,20 @@ impl App {
         self.message = Some((msg.into(), true));
     }
 
+    /// On tick, take what worker has sent since the last call with 
+    /// `run.data.poll()`
+    /// 
+    /// Upon conclusion of a run, updates dry-run.
     pub fn tick(&mut self) {
-        if let Some(run) = &mut self.run {
-            run.data.poll();
+        let Some(run) = &mut self.run else { return };
+        
+        let was_running = run.data.running();
+        run.data.poll();
+        
+        if was_running && !run.data.running() {
+            if let Some(editor) = self.editor.as_mut() {
+                editor.revalidate();
+            }
         }
     }
 
