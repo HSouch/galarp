@@ -212,7 +212,7 @@ fn draw_edit(frame: &mut Frame, area: Rect, app: &mut App) {
         lines.push(Line::raw(""));
         lines.push(Line::raw(format!("output: {}", v.output_dir.display())));
         if v.output_has_previous {
-            lines.push(Line::from("  already has snapshots. A run would overwrite them.".fg(Color::Yellow)));
+            lines.push(Line::from("  already has output. A run would overwrite them.".fg(Color::Yellow)));
         }
     }
 
