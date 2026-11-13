@@ -1,4 +1,30 @@
+//! The data behind the TUI's config editor tab.
+//!
+//! The editor shows a config file as a flat list of rows: section headers
+//! ("run", "ram pressure", "galaxy 0 (parent)", ...) with one editable field
+//! under each. 
+//! 
+//! This module loads the file, decides which rows to show, and reads / writes the values.
+//!
+//! 1. `ConfigDoc::load` parses the file with `toml_edit`, not `toml`.
+//!    `toml_edit` keeps the user's comments, spacing and key order, so saving
+//!    rewrites only the values that were edited.
+//! 2. `ConfigDoc` holds two copies of the document: `saved` (what is on disk)
+//!    and `doc` (with the edits).
+//! 3. The rows come from the tables at the bottom of this file (`CORE_FIELDS`
+//!    and `GALAXY_FIELDS`), plus one row per key the file has in `[cluster.gas]`
+//!    (its keys depend on the gas model, so they are read from the file).
+//! 4. Each field is named by a `Vec<Segment>` path such as
+//!    `galaxy.0.disk.n_particles`. `get_item` and `set_item` follow a path
+//!    through the document.
+//! 5. `ConfigDoc::validate` runs the edited text through the same parsing and
+//!    dry run as `galarp-run`, so mistakes show while editing.
+//!
+//! To show a new parameter in the editor, add a `(path, help)` line to
+//! `CORE_FIELDS` (for a top-level section) or `GALAXY_FIELDS` (for each
+//! `[[galaxy]]`).
 
+use std::fmt::Display;
 use std::path::{Path, PathBuf};
 
 use galarp_io::config::Config;
@@ -8,247 +34,391 @@ use toml_edit::{DocumentMut, Item, Table, TableLike, Value};
 
 use crate::preview::Preview;
 
-/// Either a table key, or an entry of an array of tables
+// ---------------------------------------------------------------------------
+// Paths through the document
+// ---------------------------------------------------------------------------
+
+/// One step of a path through a TOML document.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Segment {
+    /// A key of a table, e.g. `run` or `t_end_myr`.
     Key(String),
+    /// An entry of an array of tables, e.g. the `0` in `galaxy.0` is the first `[[galaxy]]`.
     Index(usize),
 }
 
-/// Keys like galaxy.0.disk.n_particles is a path through the document.
-/// Since galaxy is an array of tables, the index needs to reference an entry.
-/// This way, we don't need to guess whether 0 in this case is an index or not.
+/// Splits a dotted path such as `"galaxy.0.disk.n_particles"` into segments.
+///
+/// A part that is a whole number becomes `Segment::Index` and anything else becomes
+/// `Segment::Key`, so `"galaxy.0.disk"` is `[Key("galaxy"), Index(0), Key("disk")]`.
+/// Keeping indices separate means `get_item` and `set_item` never have to guess
+/// whether `0` is a key or an entry of `[[galaxy]]`.
 pub fn parse_path(s: &str) -> Vec<Segment> {
-    s.split('.').map(
-        |p| p.parse().map_or_else(|_| Segment::Key(p.into()), Segment::Index)
-    ).collect()
+    let mut path: Vec<Segment> = Vec::new();
+    for part in s.split('.') {
+        let segment: Segment = match part.parse::<usize>() {
+            Ok(index) => Segment::Index(index),
+            Err(_) => Segment::Key(part.to_string()),
+        };
+        path.push(segment);
+    }
+    path
 }
 
-
+/// The reverse of `parse_path`: `[Key("galaxy"), Index(0)]` becomes `"galaxy.0"`.
+/// This is the text shown in the editor's left column.
 pub fn path_string(path: &[Segment]) -> String {
-    path.iter()
-        .map(|s| match s {
-            Segment::Key(k) => k.clone(),
-            Segment::Index(i) => i.to_string(),
+    let parts: Vec<String> = path
+        .iter()
+        .map(|segment: &Segment| match segment {
+            Segment::Key(key) => key.clone(),
+            Segment::Index(index) => index.to_string(),
         })
-        .collect::<Vec<_>>()
-        .join(".")
+        .collect();
+    parts.join(".")
 }
 
+/// True if `path` is inside `[cluster.gas]`.
+fn is_cluster_gas(path: &[Segment]) -> bool {
+    let cluster_gas: [Segment; 2] = [Segment::Key("cluster".into()), Segment::Key("gas".into())];
+    path.len() >= 2 && path[..2] == cluster_gas
+}
 
+// ---------------------------------------------------------------------------
+// Rows of the editor list
+// ---------------------------------------------------------------------------
+
+/// One line of the editor list.
 #[derive(Clone, Debug)]
 pub enum Row {
+    /// A section title, e.g. "run" or "galaxy 1". It can't be selected.
     Header(String),
-    Field { path: Vec<Segment>, help: &'static str}
+    /// An editable value: where it is in the document, and the help text shown under the list.
+    Field { path: Vec<Segment>, help: &'static str },
 }
 
+/// Builds the editor list for `doc`: the core sections, then `[cluster.gas]`,
+/// then one block per `[[galaxy]]`.
+fn build_rows(doc: &DocumentMut) -> Vec<Row> {
+    let mut rows: Vec<Row> = Vec::new();
+    rows.extend(core_rows());
+    rows.extend(cluster_gas_rows(doc));
+    rows.extend(galaxy_rows(doc));
+    rows
+}
 
+/// A header for each section of `CORE_FIELDS`, followed by its fields.
+fn core_rows() -> Vec<Row> {
+    let mut rows: Vec<Row> = Vec::new();
+    for (section, fields) in CORE_FIELDS {
+        rows.push(Row::Header(section.to_string()));
+        for (path, help) in fields.iter() {
+            rows.push(Row::Field { path: parse_path(path), help });
+        }
+    }
+    rows
+}
+
+/// The `[cluster.gas]` block. Which keys exist depends on the gas model
+/// (`uniform`, `beta`, ...), so instead of a fixed list this shows every plain value
+/// the file has in `[cluster.gas]`. Sub-tables are skipped.
+///
+/// If the file has no `[cluster.gas]` values at all, it shows `cluster.gas.model`
+/// so there is something to edit. Setting the model adds keys, and
+/// `ConfigDoc::set` rebuilds the rows when that happens.
+fn cluster_gas_rows(doc: &DocumentMut) -> Vec<Row> {
+    let mut rows: Vec<Row> = vec![Row::Header("cluster gas".into())];
+
+    let gas_table: Option<&dyn TableLike> =
+        get_item(doc, &parse_path("cluster.gas")).and_then(Item::as_table_like);
+
+    let mut keys: Vec<String> = Vec::new();
+    if let Some(table) = gas_table {
+        for (key, item) in table.iter() {
+            if item.is_value() {
+                keys.push(key.to_string());
+            }
+        }
+    }
+
+    if keys.is_empty() {
+        rows.push(Row::Field {
+            path: parse_path("cluster.gas.model"),
+            help: "\"uniform\", \"beta\", \"table\" or \"none\"",
+        });
+    }
+
+    for key in keys {
+        let path: Vec<Segment> =
+            vec![Segment::Key("cluster".into()), Segment::Key("gas".into()), Segment::Key(key)];
+        rows.push(Row::Field { path, help: "[cluster.gas]; see the manual for the model's keys" });
+    }
+    rows
+}
+
+/// One block of `GALAXY_FIELDS` per `[[galaxy]]` in the file, with paths
+/// `galaxy.<index>.<field>`. Galaxy 0 is the parent.
+fn galaxy_rows(doc: &DocumentMut) -> Vec<Row> {
+    let mut rows: Vec<Row> = Vec::new();
+
+    let n_galaxies: usize = doc
+        .get("galaxy")
+        .and_then(Item::as_array_of_tables)
+        .map_or(0, |galaxies| galaxies.len());
+
+    for g in 0..n_galaxies {
+        let header: String = if g == 0 {
+            "galaxy 0 (parent)".to_string()
+        } else {
+            "galaxy ".to_string() + &g.to_string()
+        };
+        rows.push(Row::Header(header));
+
+        for (field, help) in GALAXY_FIELDS {
+            // e.g. galaxy.1.disk.mass_msun
+            let mut path: Vec<Segment> = vec![Segment::Key("galaxy".into()), Segment::Index(g)];
+            path.extend(parse_path(field));
+            rows.push(Row::Field { path, help });
+        }
+    }
+    rows
+}
+
+// ---------------------------------------------------------------------------
+// The document being edited
+// ---------------------------------------------------------------------------
+
+/// A config file open in the editor.
 pub struct ConfigDoc {
+    /// Where the file is. Changes on "save as".
     pub path: PathBuf,
-    /// The document that was loaded
+    /// The document as it is on disk (as loaded, or as last saved).
     pub saved: DocumentMut,
-    /// The document being edited
+    /// The document with the user's edits.
     pub doc: DocumentMut,
+    /// The editor list, built by `build_rows`.
     pub rows: Vec<Row>,
 }
 
-
 impl ConfigDoc {
+    /// Reads and parses the file at `path`.
     pub fn load(path: &Path) -> Result<Self, String> {
-        let text = std::fs::read_to_string(path)
-            .map_err(|e| format!("{}: {e}", path.display()))?;
-        let doc: DocumentMut = text.parse().map_err(|e| format!("{}: {e}", path.display()))?;
-        let mut c = Self { 
-            path: path.to_path_buf(), 
-            saved: doc.clone(), 
-            doc, 
-            rows:Vec::new() };
-        c.build_rows();
-        Ok(c)
+        let text: String = std::fs::read_to_string(path).map_err(|e| with_path(path, e))?;
+        let doc: DocumentMut = text.parse().map_err(|e| with_path(path, e))?;
+
+        let rows: Vec<Row> = build_rows(&doc);
+        Ok(Self { path: path.to_path_buf(), saved: doc.clone(), doc, rows })
     }
 
-    fn build_rows(&mut self) {
-        let mut rows = Vec::new();
-
-        // For each section, add section to rows
-        // Then get all of the fields for the section and extend.
-        for (section, fields) in CORE {
-            rows.push(Row::Header(section.to_string()));
-            rows.extend(fields.iter().map(|(p, help)| Row::Field { path: parse_path(p), help }));
-        }
-
-        rows.push(Row::Header("cluster gas".into()));
-
-        let gas = get(&self.doc, &parse_path("cluster.gas")).and_then(Item::as_table_like);
-        let keys: Vec<String> = gas
-            .map(|t| t.iter().filter(|(_, v)| v.is_value()).map(|(k, _)| k.to_string()).collect())
-            .unwrap_or_default();
-        if keys.is_empty() {
-            rows.push(
-                Row::Field { path: parse_path("cluster.gas.model"), 
-                help: "\"uniform\", \"beta\", \"table\" or \"none\"" });
-        }
-        for k in keys {
-            let path = vec![Segment::Key("cluster".into()), Segment::Key("gas".into()), Segment::Key(k)];
-            rows.push(Row::Field { path, help: "[cluster.gas]; see the manual for the model's keys" });
-        }
-
-        // One block of GALAXY rows per [[galaxy]].
-        let n_gal = self.doc.get("galaxy").and_then(
-            Item::as_array_of_tables).map_or(0, |a| a.len());
-        for g in 0..n_gal {
-            rows.push(
-                Row::Header(if g == 0 { "galaxy 0 (parent)".into() } 
-                else 
-                { format!("galaxy {g}").to_string() }));
-            
-            for (p, help) in GALAXY {
-                rows.push(Row::Field { path: parse_path(&format!("galaxy.{g}.{p}")), help });
-            }
-        }
-       
-        self.rows = rows;
-
-    }
-
+    /// The file name for the editor's title, e.g. `face_on.toml`.
     pub fn name(&self) -> String {
-        self.path.file_name().map_or_else(
-            || self.path.display().to_string(), 
-            |n| n.to_string_lossy().into())
+        match self.path.file_name() {
+            Some(name) => name.to_string_lossy().into(),
+            None => self.path.display().to_string(),
+        }
     }
 
+    /// The edited document as TOML text.
     pub fn text(&self) -> String {
         self.doc.to_string()
     }
 
+    /// True if there are unsaved edits.
     pub fn not_pristine(&self) -> bool {
         self.doc.to_string() != self.saved.to_string()
     }
 
-    /// The value at `path` as a TOML entry, or None if the file leaves it as the default.
+    // ----- reading values -----
+
+    /// The value at `path` as TOML text (strings keep their quotes),
+    /// or `None` if the file doesn't set it, so the default is used.
     pub fn value(&self, path: &[Segment]) -> Option<String> {
-        get(&self.doc, path).and_then(Item::as_value).map(show)
+        value_text_at(&self.doc, path)
     }
 
-    /// Check whether value has changed between current edited version and original
-    /// 
+    /// The value at `path` if it is a string, without quotes.
+    pub fn str_value(&self, path: &[Segment]) -> Option<String> {
+        get_item(&self.doc, path).and_then(Item::as_str).map(String::from)
+    }
+
+    /// True if the value at `path` was edited since loading or saving.
+    /// Adding or removing the key counts as a change.
     pub fn changed(&self, path: &[Segment]) -> bool {
-        let now = get(&self.doc, path).and_then(Item::as_value).map(show);
-        
-        let before = get(&self.saved, path).and_then(Item::as_value).map(show);
-
+        let now: Option<String> = value_text_at(&self.doc, path);
+        let before: Option<String> = value_text_at(&self.saved, path);
         now != before
-
     }
 
+    // ----- editing values -----
+
+    /// Sets `path` to what the user typed, see `parse_input`.
+    /// Empty input removes the key, so the default is used.
     pub fn set(&mut self, path: &[Segment], input: &str) -> Result<(), String> {
-        let input = input.trim();
-        let value = if input.is_empty() {
-            None
-        } else {
-            match input.parse::<Value>() {
-                Ok(v) => Some(v),
-                Err(_) if !input.contains(|c: char| "\"'[]{}=, ".contains(c)) => Some(Value::from(input)),
-                Err(_) => return Err(format!("{input} is not a TOML value")),
-            }
-        };
-        set(&mut self.doc, path, value)?;
-        if path.len() >= 2 && path[..2] == [Segment::Key("cluster".into()), Segment::Key("gas".into())] {
-            self.build_rows();
+        let value: Option<Value> = parse_input(input)?;
+        set_item(&mut self.doc, path, value)?;
+
+        // The [cluster.gas] rows are read from the file (see `cluster_gas_rows`),
+        // so changing a gas value, e.g. the model, can change which rows to show.
+        if is_cluster_gas(path) {
+            self.rows = build_rows(&self.doc);
         }
         Ok(())
     }
 
-    /// Set `path` to a TOML string, keeping the old value's comments.
+    /// Sets `path` to the string `s`, keeping the old value's comments.
+    /// Unlike `set`, `s` is never parsed as TOML.
     pub fn set_str(&mut self, path: &[Segment], s: &str) -> Result<(), String> {
-        set(&mut self.doc, path, Some(Value::from(s)))
+        set_item(&mut self.doc, path, Some(Value::from(s)))
     }
 
-    /// Flip a boolean value
+    /// Flips the boolean at `path`.
+    ///
+    /// Returns `Ok(false)` and changes nothing if the value isn't a boolean (or isn't
+    /// set). The caller then opens the text input instead.
     pub fn toggle(&mut self, path: &[Segment]) -> Result<bool, String> {
-        let current = get(&self.doc, path)
-            .and_then(Item::as_value).and_then(Value::as_bool);
+        let current: Option<bool> =
+            get_item(&self.doc, path).and_then(Item::as_value).and_then(Value::as_bool);
 
         let Some(b) = current else {
-            return Ok(false)
+            return Ok(false);
         };
 
-        set(&mut self.doc, path, Some(Value::from(!b)))?;
-
+        set_item(&mut self.doc, path, Some(Value::from(!b)))?;
         Ok(true)
     }
 
-    /// Writes document, and makes written path the doc's path.
-    /// Also makes the written text the `saved` copy.
+    // ----- saving and checking -----
+
+    /// Writes the edited document to `path`. Afterwards `path` is the doc's path
+    /// and the written document is the `saved` copy.
     pub fn save_as(&mut self, path: &Path) -> Result<(), String> {
-        std::fs::write(path, self.doc.to_string())
-            .map_err(|e| format!("{}: {e}", path.display()))?;
+        std::fs::write(path, self.doc.to_string()).map_err(|e| with_path(path, e))?;
 
         self.path = path.to_path_buf();
         self.saved = self.doc.clone();
         Ok(())
     }
 
-    /// Parses and validates edited text.
-    /// Also sets up the dry run.
+    /// Checks the edited text: parses it as a `Config` (relative paths are taken from
+    /// the file's folder), does a dry run, and makes the preview.
     pub fn validate(&self) -> Validation {
-        let base = self.path.parent().unwrap_or(Path::new("."));
-        let text = self.text();
+        let base_dir: &Path = self.path.parent().unwrap_or(Path::new("."));
+        let text: String = self.text();
 
-        let cfg = Config::from_str_in(&text, base);
+        let config = Config::from_str_in(&text, base_dir);
 
-        let output_dir = cfg.as_ref().map_or_else(
-            |_| PathBuf::new(),
-            |c| c.run.output_dir.clone()
-        );
+        // These two need a config that parsed. If it didn't, the output dir is
+        // empty and there is no preview; the error is in `result`.
+        let output_dir: PathBuf = match &config {
+            Ok(c) => c.run.output_dir.clone(),
+            Err(_) => PathBuf::new(),
+        };
+        let preview: Option<Result<Preview, String>> = config.as_ref().ok().map(Preview::new);
 
-        let preview = cfg.as_ref().ok().map(Preview::new);
+        // The config error, or the dry run's summary (or error).
+        let result: Result<Vec<String>, String> = match config {
+            Err(e) => Err(e.0),
+            Ok(c) => galarp_run::dry_run(&c).map_err(|e| e.to_string()),
+        };
 
-        let result = cfg
-            .map_err(|e| e.0)
-            .and_then(|cfg| galarp_run::dry_run(&cfg).map_err(|e| e.to_string())
-        );
-        
-        // Check if output already has snapshots
-        let output_has_previous = !output_dir.as_os_str().is_empty() 
-            && has_previous_snapshots(&output_dir);
+        let output_has_previous: bool =
+            !output_dir.as_os_str().is_empty() && has_previous_snapshots(&output_dir);
 
         Validation { result, output_dir, output_has_previous, preview }
-        
-    }
-
-    /// Value at `path` if it is a string, without quotes.
-    pub fn str_value(&self, path: &[Segment]) -> Option<String> {
-        get(&self.doc, path).and_then(Item::as_str).map(String::from)
     }
 }
 
+/// The result of `ConfigDoc::validate`, shown in the editor.
+pub struct Validation {
+    /// The dry run's summary lines, or why the config is invalid.
+    pub result: Result<Vec<String>, String>,
 
-fn show(v: &Value) -> String {
-    let mut v = v.clone();
-    v.decor_mut().clear();
+    /// `run.output_dir`, empty if the config didn't parse.
+    pub output_dir: PathBuf,
+    /// True if `output_dir` already has output, so running would overwrite it.
+    pub output_has_previous: bool,
 
-    v.to_string()
+    /// The preview of the initial conditions, or `None` if the config didn't parse.
+    pub preview: Option<Result<Preview, String>>,
 }
 
+/// True if `dir` has the output of an earlier run: the first snapshot,
+/// `log.csv`, or the copy of the config.
+pub fn has_previous_snapshots(dir: &Path) -> bool {
+    output_path(dir, 0).exists() || dir.join("log.csv").exists() || dir.join("config.toml").exists()
+}
 
-/// Walk through the tables
-/// Step through array of tables when next segment is an index
-pub fn get<'a>(doc: &'a DocumentMut, path: &[Segment]) -> Option<&'a Item> {
+// ---------------------------------------------------------------------------
+// Helpers for values and errors
+// ---------------------------------------------------------------------------
+
+/// Turns what the user typed into a value. Empty input is `None` (remove the key).
+///
+/// The input is parsed as a TOML value first (`1.5`, `true`, `"beta"`, `[1, 2, 3]`).
+/// If that fails and the input is a bare word such as `beta`, it is taken as the
+/// string `"beta"` so the quotes can be left out. Anything else that isn't TOML
+/// (e.g. `[1, 2`) is an error.
+fn parse_input(input: &str) -> Result<Option<Value>, String> {
+    let input: &str = input.trim();
+    if input.is_empty() {
+        return Ok(None);
+    }
+
+    match input.parse::<Value>() {
+        Ok(value) => Ok(Some(value)),
+        Err(_) if is_bare_word(input) => Ok(Some(Value::from(input))),
+        Err(_) => Err(input.to_string() + " is not a TOML value"),
+    }
+}
+
+/// True if `s` has none of the characters that make up TOML strings, arrays and
+/// tables (quotes, brackets, braces, `=`, `,` or a space).
+fn is_bare_word(s: &str) -> bool {
+    const TOML_PUNCTUATION: &str = "\"'[]{}=, ";
+    !s.chars().any(|c: char| TOML_PUNCTUATION.contains(c))
+}
+
+/// The value at `path` in `doc` as TOML text, or `None` if it's unset or a table.
+fn value_text_at(doc: &DocumentMut, path: &[Segment]) -> Option<String> {
+    get_item(doc, path).and_then(Item::as_value).map(value_text)
+}
+
+/// A value as TOML text, without its decor (the spaces and comments
+/// `toml_edit` keeps around it), e.g. `1.5` rather than ` 1.5 # kpc`.
+fn value_text(value: &Value) -> String {
+    let mut bare: Value = value.clone();
+    bare.decor_mut().clear();
+    bare.to_string()
+}
+
+/// An error message that starts with the file, e.g. `configs/a.toml: not found`.
+fn with_path(path: &Path, error: impl Display) -> String {
+    path.display().to_string() + ": " + &error.to_string()
+}
+
+// ---------------------------------------------------------------------------
+// Following a path through the document
+// ---------------------------------------------------------------------------
+//   - `Key(k)` steps into table `k`.
+//   - `Key(k)` followed by `Index(n)` steps into the n-th entry of the array of
+//     tables `k`, and uses up both segments.
+// The last segment must be a `Key`: the value to get or set.
+
+/// The item at `path`, or `None` if any step is missing or isn't a table.
+pub fn get_item<'a>(doc: &'a DocumentMut, path: &[Segment]) -> Option<&'a Item> {
     let (last, parents) = path.split_last()?;
 
     let mut table: &dyn TableLike = doc.as_table();
-
-    let mut i = 0;
+    let mut i: usize = 0;
 
     while i < parents.len() {
-
-        let Segment::Key(k) = &parents[i] else { return None };
-        let item = table.get(k)?;
+        // A table step must start with a key (an Index here would have no array).
+        let Segment::Key(key) = &parents[i] else { return None };
+        let item: &Item = table.get(key)?;
 
         table = match parents.get(i + 1) {
             Some(Segment::Index(n)) => {
-                i += 1;
+                i += 1; // the index is used up here as well
                 item.as_array_of_tables()?.get(*n)?
             }
             _ => item.as_table_like()?,
@@ -258,73 +428,69 @@ pub fn get<'a>(doc: &'a DocumentMut, path: &[Segment]) -> Option<&'a Item> {
     }
 
     match last {
-        Segment::Key(k) => table.get(k),
+        Segment::Key(key) => table.get(key),
         Segment::Index(_) => None,
     }
 }
 
+/// Sets (`Some`) or removes (`None`) the value at `path`.
+///
+/// - Missing tables on the way are created, as `[a.b]` tables. Missing arrays of
+///   tables are not: setting `galaxy.3.name` with two galaxies is an error.
+/// - Removing a value whose table doesn't exist does nothing.
+/// - Replacing a value keeps the old value's decor, so a trailing `# comment` survives.
+fn set_item(doc: &mut DocumentMut, path: &[Segment], value: Option<Value>) -> Result<(), String> {
+    let cant_set = || "can't set ".to_string() + &path_string(path);
 
-fn set(doc: &mut DocumentMut, path: &[Segment], value: Option<Value>) -> Result<(), String> {
-    let bad = || format!("can't set {}", path_string(path));
-    
-    let (last, parents) = path.split_last().ok_or_else(bad)?;
-    
-    let Segment::Key(last) = last else { return Err(bad()) };
-    
+    let (last, parents) = path.split_last().ok_or_else(cant_set)?;
+    let Segment::Key(last_key) = last else { return Err(cant_set()) };
+
     let mut table: &mut dyn TableLike = doc.as_table_mut();
-    let mut i = 0;
-    
+    let mut i: usize = 0;
+
     while i < parents.len() {
-        let Segment::Key(k) = &parents[i] else { return Err(bad()) };
-        if table.get(k).is_none() {
+        let Segment::Key(key) = &parents[i] else { return Err(cant_set()) };
+
+        if table.get(key).is_none() {
             if value.is_none() {
-                return Ok(());
+                return Ok(()); // nothing to remove
             }
-            table.insert(k, Item::Table(Table::new()));
+            table.insert(key, Item::Table(Table::new()));
         }
-        let item = table.get_mut(k).ok_or_else(bad)?;
+        let item: &mut Item = table.get_mut(key).ok_or_else(cant_set)?;
+
         table = match parents.get(i + 1) {
             Some(Segment::Index(n)) => {
-                i += 1;
-                item.as_array_of_tables_mut().and_then(|a| a.get_mut(*n)).ok_or_else(bad)?
+                i += 1; // the index is used up here as well
+                item.as_array_of_tables_mut().and_then(|array| array.get_mut(*n)).ok_or_else(cant_set)?
             }
-            _ => item.as_table_like_mut().ok_or_else(bad)?,
+            _ => item.as_table_like_mut().ok_or_else(cant_set)?,
         };
         i += 1;
     }
+
     match value {
         None => {
-            table.remove(last);
+            table.remove(last_key);
         }
-        Some(mut v) => {
-            if let Some(old) = table.get(last).and_then(Item::as_value) {
-                *v.decor_mut() = old.decor().clone();
+        Some(mut new_value) => {
+            if let Some(old_value) = table.get(last_key).and_then(Item::as_value) {
+                *new_value.decor_mut() = old_value.decor().clone();
             }
-            table.insert(last, Item::Value(v));
+            table.insert(last_key, Item::Value(new_value));
         }
     }
     Ok(())
 }
 
 
-pub fn has_previous_snapshots(dir: &Path) -> bool {
-    output_path(dir, 0).exists()
-        || dir.join("log.csv").exists()
-        || dir.join("config.toml").exists()
-}
+/// A field: its dotted path and the help text shown when it is selected.
+pub type FieldSpec = (&'static str, &'static str);
 
+/// A section: its header and its fields.
+pub type SectionSpec = (&'static str, &'static [FieldSpec]);
 
-pub struct Validation {
-    pub result: Result<Vec<String>, String>,
-
-    pub output_dir: PathBuf,
-    pub output_has_previous: bool,
-
-    pub preview: Option<Result<Preview, String>>,
-}
-
-
-pub const CORE: &[(&str, &[(&str, &str)])] = &[
+pub const CORE_FIELDS: &[SectionSpec] = &[
     (
         "run",
         &[
@@ -336,7 +502,6 @@ pub const CORE: &[(&str, &[(&str, &str)])] = &[
             ("galarp.dt_myr", "RK4 step"),
             ("galarp.vertical_dispersion_km_s", "cloud sigma_z (default: the disk's sound speed)"),
             ("galarp.seed", "seed of the vertical velocities"),
-
         ],
     ),
     (
@@ -359,7 +524,7 @@ pub const CORE: &[(&str, &[(&str, &str)])] = &[
     ),
 ];
 
-pub const GALAXY: &[(&str, &str)] = &[
+pub const GALAXY_FIELDS: &[FieldSpec] = &[
     ("name", "label in the log and summaries"),
     ("inclination_deg", "disk tilt from the cluster z axis (or give disk_normal)"),
     ("azimuth_deg", "azimuth of the tilt"),
