@@ -24,6 +24,11 @@ impl DynamicShadow {
     /// `los` is the unit direction the wind blows along, 
     /// `north` fixes the orientation of the column grid about it (GalaRP uses the disk normal) 
     /// `center` is the origin.
+    /// 
+    /// Shadowing operates first by binning the particles by x_cam and y_cam, which are
+    /// set by the line of sight `los` and rotation `north`. It then computes shadowing on the 
+    /// particles in each column by adopting an optical-depth prescription.
+    /// 
     pub fn factors(&self, los: [f64; 3], north: [f64; 3], center: [f64; 3], pos: &[[f64; 3]], area: &[f64]) -> Vec<f64> {
         assert_eq!(pos.len(), area.len());
         let (xcam, ycam) = basis(los, north);
@@ -38,14 +43,18 @@ impl DynamicShadow {
             })
             .collect();
         
+        // Ordering of particles within the columns
         let mut order: Vec<usize> = (0..pos.len()).collect();
         order.par_sort_unstable_by(|&a, &b| {
             let (ka, kb) = (&keys[a], &keys[b]);
             (ka.0, ka.1).cmp(&(kb.0, kb.1)).then(ka.2.total_cmp(&kb.2)).then(a.cmp(&b))
         });
         
-        let columns: Vec<&[usize]> = order.chunk_by(|&a, &b| keys[a].0 == keys[b].0 && keys[a].1 == keys[b].1).collect();
+        let columns: Vec<&[usize]> = 
+            order.chunk_by(|&a, &b| keys[a].0 == keys[b].0 && keys[a].1 == keys[b].1).collect();
         let cell_area = w * w;
+        // March through the columns and determine shadowing for those particles.
+        // Done in parallel using rayon par_iter()
         let marched: Vec<Vec<(usize, f64)>> = columns
             .par_iter()
             .map(|col| {
