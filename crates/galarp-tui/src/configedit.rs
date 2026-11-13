@@ -210,10 +210,10 @@ impl ConfigDoc {
         );
         
         // Check if output already has snapshots
-        let output_has_snapshots = !output_dir.as_os_str().is_empty() && 
-            output_path(&output_dir, 0).exists();
+        let output_has_previous = !output_dir.as_os_str().is_empty() 
+            && has_previous_snapshots(&output_dir);
 
-        Validation { result, output_dir, output_has_snapshots, preview }
+        Validation { result, output_dir, output_has_previous, preview }
         
     }
 
@@ -307,11 +307,18 @@ fn set(doc: &mut DocumentMut, path: &[Segment], value: Option<Value>) -> Result<
 }
 
 
+pub fn has_previous_snapshots(dir: &Path) -> bool {
+    output_path(dir, 0).exists()
+        || dir.join("log.csv").exists()
+        || dir.join("config.toml").exists()
+}
+
+
 pub struct Validation {
     pub result: Result<Vec<String>, String>,
 
     pub output_dir: PathBuf,
-    pub output_has_snapshots: bool,
+    pub output_has_previous: bool,
 
     pub preview: Option<Result<Preview, String>>,
 }
