@@ -17,7 +17,7 @@
 //! To add a parameter:
 //! 1. add the field (named with unit suffix _UNIT)
 //! 2. Choose whether required or optional. A default is generally preferable.
-//!     #[serde(default = "d_DEFAULT_FN")]
+//!    #[serde(default = "d_DEFAULT_FN")]
 //! 3. If the file can change over time, make it a ParamSpec
 //! 4. Add validation to the struct's validate.
 //! 

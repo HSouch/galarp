@@ -314,6 +314,7 @@ fn in_disk_fraction(cfg: &Config, field: &ExternalField, clouds: &Clouds, t: f64
     inside.iter().zip(&total).map(|(a, b)| if *b > 0.0 { a / b } else { f64::NAN }).collect()
 }
 
+/// Single row of the output log 
 fn log_row(cfg: &Config, field: &ExternalField, rp: Option<&RamPressure>, clouds: &Clouds, t: f64) -> Vec<f64> {
     let frac = in_disk_fraction(cfg, field, clouds, t);
     let bound = bound_fraction(field, clouds, t);

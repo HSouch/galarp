@@ -146,10 +146,8 @@ impl GalaRPConfig {
     /// checked by `Config::rk4_steps_per_dt_max`, as before.
     pub(super) fn validate(&self) -> Result<(), ConfigError> {
         positive("galarp.dt_myr", self.dt_myr)?;
-        if let Some(s) = self.vertical_dispersion_km_s {
-            if !(s >= 0.0) {
-                return err("galarp.vertical_dispersion_km_s must be >= 0");
-            }
+        if let Some(s) = self.vertical_dispersion_km_s && !(s >= 0.0) {
+            return err("galarp.vertical_dispersion_km_s must be >= 0");
         }
         Ok(())
     }

@@ -36,9 +36,9 @@ impl GalaxyField {
     #[inline]
     pub fn acceleration_at_offset(&self, d: &[f64; 3], t: f64) -> [f64; 3] {
         if self.orientation.is_identity() { 
-            return self.potential.acceleration(d, t); 
+            self.potential.acceleration(d, t)
         } else {
-            return self.orientation.to_cluster(&self.potential.acceleration(&self.orientation.to_galaxy(d), t));
+            self.orientation.to_cluster(&self.potential.acceleration(&self.orientation.to_galaxy(d), t))
         }
         
     }
